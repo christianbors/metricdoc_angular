@@ -29,8 +29,7 @@ export class QualityHeaderColComponent implements OnChanges, AfterContentChecked
     let svg = d3.select(this.htmlElement).select("svg");
 
     svg.data(this.metricCol.metrics[this.metric]);
-    svg.attr("width", cellWidth)
-      .attr("height", 26)
+    svg.attr("height", 26)
       .on("mouseover", d => {
         if(this.metricCol.metrics[this.metric]) {
           let currentMetric = this.metricCol.metrics[this.metric];

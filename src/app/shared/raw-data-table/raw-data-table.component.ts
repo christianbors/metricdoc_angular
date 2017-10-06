@@ -1,6 +1,6 @@
 import { Component, Directive, Injectable, HostListener, 
   OnInit, AfterContentChecked, AfterViewChecked,
-  Input, ViewChild, Output, EventEmitter, SimpleChanges, OnChanges } from '@angular/core';
+  Input, ViewChild, Output, EventEmitter, SimpleChanges, OnChanges, ChangeDetectionStrategy } from '@angular/core';
 
 import { OpenRefineService } from '../open-refine/open-refine.service';
 
@@ -15,23 +15,6 @@ import { ContextMenuService, ContextMenuComponent } from 'angular2-contextmenu';
 import * as d3 from 'd3';
 import * as d3Tip from 'd3-tip';
 import * as d3Selection from 'd3-selection';
-
-// @Directive({
-//   selector: '[scroll-raw-data-body]'
-// })
-// export class RawDataBodyScrollDirective {
-//   @HostListener('scroll', ['$event']) onScroll(event) {
-//   }
-// }
-
-// @Directive({
-//   selector: '[scroll-raw-data-columns]'
-// })
-// export class RawDataColumnScrollDirective {
-//   @HostListener('scroll', ['$event']) onScroll(event) {
-//     console.log('test');
-//   }
-// }
 
 @Injectable()
 @Component({
@@ -114,16 +97,24 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   }
 
   ngAfterContentChecked() {
-    if (this.headerCols && this.bodyCols && this.colOffset.length == 0) {
-      this.colWidths = [];
-      for (let td of this.headerCols.nativeElement.children) {
-        this.colWidths.push(td.offsetWidth);
-      }
-      for (let i = 1; i < this.bodyCols.nativeElement.children.length; ++i) {
-        if (this.colWidths[i] > this.bodyCols.nativeElement.children[i].offsetWidth) {
-          this.colWidths[i] = this.bodyCols.nativeElement.children[i].offsetWidth;
+    // the header widhts are added to the column widths only after initializing offsets
+    if (this.headerCols && this.colOffset.length > 0) {
+      for (let i = 1; i < this.headerCols.nativeElement.children.length; ++i) {
+        if (this.colWidths[i] < this.headerCols.nativeElement.children[i].offsetWidth) {
+          this.colWidths[i] = this.headerCols.nativeElement.children[i].offsetWidth;
         }
       }
+    }
+    if (this.headerCols && this.bodyCols && this.colOffset.length == 0) {
+      this.colWidths = [];
+      
+      // push first empty column width
+      this.colWidths.push(this.headerCols.nativeElement.children[0].offsetWidth);
+
+      for (let i = 1; i < this.bodyCols.nativeElement.children.length; ++i) {
+        this.colWidths.push(this.bodyCols.nativeElement.children[i].offsetWidth);
+      }
+
       this.colOffset = [];
       this.colOffset.push(0);
       for (let metricColumn of this.metricsOverlayModel.metricColumns) {
@@ -153,7 +144,6 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
         .data(this.colWidths)
         .each(function(data, index) {
           d3.select(this).select('svg')
-            .style('width', data)
             .style('paddingTop', 0)
             .style('paddingBottom', 0)
             .style('paddingRight', 0)
@@ -163,13 +153,14 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
         .data(this.colWidths)
         .each(function(data, index) {
           d3.select(this)
-            .style('width', data)
             .style('paddingTop', 0)
             .style('paddingBottom', 0)
             .style('paddingRight', 0)
             .style('paddingLeft', 6);
       });
+
     }
+
     if (this.colHead) {
       let colBox = this.colHead.nativeElement.getBoundingClientRect();
       this.overlayOffsetTop = colBox.height;
@@ -191,10 +182,6 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
         d3.select(this).select('svg')
           .style('width', data);
       });
-  }
-
-  ngOnChanges(changes: SimpleChanges) {
-
   }
 
   pageChanged(event:any):void {
