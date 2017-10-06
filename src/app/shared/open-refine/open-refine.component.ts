@@ -138,20 +138,19 @@ export class OpenRefineComponent implements OnInit, OnChanges {
     this.selectedMetrics = selection.metrics;
     this.selectedColumns = selection.columns;
 
-    for (let cols of this.selectedColumns) {
-      if (Array.isArray(cols)) {
-        for (let modelSpanMetric of this.openRefineProject.overlayModels.metricsOverlayModel.spanningMetrics) {
-          let currentSpanMetric = this.selectedMetrics[this.selectedColumns.indexOf[cols]];
-          if (modelSpanMetric.name == currentSpanMetric) {
-            modelSpanMetric = currentSpanMetric;
+    for (let i = 0; i < this.selectedColumns.length; ++i) {
+      if (Array.isArray(this.selectedColumns[i])) {
+        for (let spanIdx = 0; spanIdx < this.openRefineProject.overlayModels.metricsOverlayModel.spanningMetrics.length; spanIdx++) {
+          if (this.openRefineProject.overlayModels.metricsOverlayModel.spanningMetrics[spanIdx].name == this.selectedMetrics[i].name) {
+            this.openRefineProject.overlayModels.metricsOverlayModel.spanningMetrics[spanIdx] = this.selectedMetrics[i];
+            break;
           }
         }
       } else {
         let metricColumn = this.openRefineProject.overlayModels.metricsOverlayModel.metricColumns.filter(mCol => {
-          return cols == mCol.columnName;
+          return this.selectedColumns[i] == mCol.columnName;
         });
-        let colIdx = this.selectedColumns.indexOf(cols);
-        metricColumn[this.selectedMetrics[colIdx].name] = this.selectedMetrics[colIdx];
+        metricColumn[0].metrics[this.selectedMetrics[i].name] = this.selectedMetrics[i];
       }
     }
   }
