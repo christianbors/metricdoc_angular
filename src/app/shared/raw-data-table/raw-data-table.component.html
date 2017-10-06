@@ -106,7 +106,7 @@
           <td *ngFor="let column of project.columnModel.columns; let i = index; trackBy: trackByFn"
             [style.padding.px]="0"
             [style.paddingRight.px]="6"
-            [style.width.px]="colWidths[i+1]">
+            > <!-- [style.width.px]="colWidths[i+1]" -->
             <ng-container *ngIf="row.cells[column.cellIndex]">{{row.cells[column.cellIndex].v}}</ng-container>
           </td>
         </tr>
