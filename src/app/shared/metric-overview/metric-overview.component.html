@@ -1,0 +1,33 @@
+<accordion>
+  <accordion-group heading="Metric Information"
+    [isOpen]="status.isFirstOpen"
+    [isDisabled]="status.isFirstDisabled">
+    <ul id="simpleList" class="list-group fixed-panel">
+        <li class="list-group-item">
+          <label for="metricName">
+            Name:
+          </label>
+          <span id="metricName"></span>
+        </li>
+        <li class="list-group-item">
+          <label for="metricName">
+            Description: 
+          </label>
+          <div id="metricDescription"></div>
+        </li>
+        <li class="list-group-item">
+          <div class="form-group" id="metricDatatype">
+            <label for="metricType" class="control-label">Data Type: </label>
+            <label class="radio-inline">
+              <input type="radio"> String</label>
+            <label class="radio-inline">
+              <input type="radio"> Numeric</label>
+            <label class="radio-inline">
+              <input type="radio"> Date/Time</label>
+            <label class="radio-inline">
+              <input type="radio"> Categoric</label>
+          </div>
+        </li>
+      </ul>
+  </accordion-group>
+</accordion>

@@ -1,0 +1,67 @@
+{	"columnModel":
+	{
+		"columns":[
+			{"cellIndex":0,"originalName":"dates","name":"dates"},
+			{"cellIndex":1,"originalName":"Los Angeles","name":"Los Angeles"},
+			{"cellIndex":2,"originalName":"New York","name":"New York"}
+		],
+		"keyCellIndex":0,"keyColumnName":"dates","columnGroups":[]
+	},
+	"recordModel":
+	{
+		"hasRecords":false
+	},
+	"overlayModels":
+	{
+		"metricsOverlayModel":
+		{"metricColumns":[
+			{"columnName":"New York","metrics":{
+				"plausibility":{
+					"name":"plausibility",
+					"measure":"0.0",
+					"datatype":"unknown",
+					"description":"Perform statistical plausibilization. The plausibility can be compared progressively (based on the last 10 values), or globally. Plausible values can be compared to robust/standard statistics measures",
+					"concat":"OR",
+					"evalTuples":[
+						{"evaluable":"plausibility(value, \"global\", \"robust\")",
+						"column":"New York",
+						"comment":"",
+						"disabled":false}
+					]},
+				"validity":{
+					"name":"validity",
+					"measure":"0.0",
+					"datatype":"unknown",
+					"description":"Evaluate validity of a value with respect to the column data type",
+					"concat":"OR",
+					"evalTuples":[
+						{"evaluable":"validity(value, \"string\")",
+						"column":"New York",
+						"comment":"",
+						"disabled":false}
+					]},
+				"completeness":{
+					"name":"completeness",
+					"measure":"0.0",
+					"datatype":"unknown",
+					"description":"Evaluates if an entry is empty",
+					"concat":"OR",
+					"evalTuples":[
+						{"evaluable":"completeness(value)","column":"New York","comment":"","disabled":false}
+					]}
+				}},
+			{"columnName":"dates","metrics":{"plausibility":{"name":"plausibility","measure":"0.0","datatype":"unknown","description":"Perform statistical plausibilization. The plausibility can be compared progressively (based on the last 10 values), or globally. Plausible values can be compared to robust/standard statistics measures","concat":"OR","evalTuples":[{"evaluable":"plausibility(value, \"global\", \"robust\")","column":"dates","comment":"","disabled":false}]},"validity":{"name":"validity","measure":"0.0","datatype":"unknown","description":"Evaluate validity of a value with respect to the column data type","concat":"OR","evalTuples":[{"evaluable":"validity(value, \"string\")","column":"dates","comment":"","disabled":false}]},"completeness":{"name":"completeness","measure":"0.0","datatype":"unknown","description":"Evaluates if an entry is empty","concat":"OR","evalTuples":[{"evaluable":"completeness(value)","column":"dates","comment":"","disabled":false}]}}},{"columnName":"Los Angeles","metrics":{"plausibility":{"name":"plausibility","measure":"0.0","datatype":"unknown","description":"Perform statistical plausibilization. The plausibility can be compared progressively (based on the last 10 values), or globally. Plausible values can be compared to robust/standard statistics measures","concat":"OR","evalTuples":[{"evaluable":"plausibility(value, \"global\", \"robust\")","column":"Los Angeles","comment":"","disabled":false}]},"validity":{"name":"validity","measure":"0.0","datatype":"unknown","description":"Evaluate validity of a value with respect to the column data type","concat":"OR","evalTuples":[{"evaluable":"validity(value, \"string\")","column":"Los Angeles","comment":"","disabled":false}]},"completeness":{"name":"completeness","measure":"0.0","datatype":"unknown","description":"Evaluates if an entry is empty","concat":"OR","evalTuples":[{"evaluable":"completeness(value)","column":"Los Angeles","comment":"","disabled":false}]}}}],
+		"availableMetrics":["validity","completeness","plausibility"],"availableSpanningMetrics":["dateIntervalOutliers","dateInterval","uniqueness"],"computeDuplicates":false},
+		"provenance":
+		{"provFilePath":"/Users/christianbors/Library/Application Support/OpenRefine/1519676861949.project/prov.json","projectId":1519676861949}
+	},
+	"scripting":
+	{
+		"grel":
+			{"name":"General Refine Expression Language (GREL)","defaultExpression":"value"},
+		"jython":
+			{"name":"Python / Jython","defaultExpression":"return value"},
+		"clojure":
+			{"name":"Clojure","defaultExpression":"value"}
+		}
+	}

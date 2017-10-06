@@ -1,0 +1,28 @@
+@import "../globals";
+
+svg.heatmap {
+  width: 100%;
+  height: $raw-data-height + 50 + 90;
+
+  rect {
+    width: 100%;
+    height: $raw-data-height;
+  }
+}
+
+rect.pos-overlay {
+  fill: lightgrey;
+  opacity: 30%;
+  pointer-events: none;
+}
+
+svg.legend {
+  margin-right: 8px;
+  height: 12px;
+  width: 16px;
+
+  rect {
+    height: 12px;
+    width: 12px;
+  }
+}

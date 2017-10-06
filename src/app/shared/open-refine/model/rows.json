@@ -1,0 +1,95 @@
+{
+    "mode": "row-based",
+    "rows": [{
+        "flagged": false,
+        "starred": false,
+        "cells": [{
+            "v": "1987-01-31T00:00:00Z",
+            "t": "date"
+        }, {
+            "v": "16.5806451612903"
+        }, {
+            "v": 18.1612903225806
+        }, null, null, null, null],
+        "i": 0
+    }, {
+        "flagged": false,
+        "starred": false,
+        "cells": [{
+            "v": "1987-02-28T00:00:00Z",
+            "t": "date"
+        }, {
+            "v": ""
+        }, {
+            "v": 16.9642857142857
+        }, null, null, null, null],
+        "i": 1
+    }, {
+        "flagged": false,
+        "starred": false,
+        "cells": [{
+            "v": "1987-03-31T00:00:00Z",
+            "t": "date"
+        }, {
+            "v": "13.6774193548387"
+        }, {
+            "v": 15.7096774193548
+        }, null, null, null, null],
+        "i": 2
+    }, {
+        "flagged": false,
+        "starred": false,
+        "cells": [{
+            "v": "1987-04-30T00:00:00Z",
+            "t": "date"
+        }, {
+            "v": "13"
+        }, {
+            "v": 13.5666666666667
+        }, null, null, null, null],
+        "i": 3
+    }, {
+        "flagged": false,
+        "starred": false,
+        "cells": [{
+            "v": "1987-05-31T00:00:00Z",
+            "t": "date"
+        }, {
+            "v": "12"
+        }, {
+            "v": 14.3870967741935
+        }, null, null, null, null],
+        "i": 4
+    }, {
+        "flagged": false,
+        "starred": false,
+        "cells": [{
+            "v": "1987-06-30T00:00:00Z",
+            "t": "date"
+        }, {
+            "v": "11.2666666666667"
+        }, {
+            "v": 13.3
+        }, null, null, null, null],
+        "i": 5
+    }, {
+        "flagged": false,
+        "starred": false,
+        "cells": [{
+            "v": "1987-07-31T00:00:00Z",
+            "t": "date"
+        }, {
+            "v": "10.4516129032258"
+        }, {
+            "v": 13.0322580645161
+        }, null, null, null, null],
+        "i": 6
+    }],
+    "filtered": 7,
+    "total": 7,
+    "start": 0,
+    "limit": 7,
+    "pool": {
+        "recons": {}
+    }
+}

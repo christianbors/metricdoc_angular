@@ -1,0 +1,128 @@
+<div *ngIf="project">
+  <table class='table spanning-metrics-overview'>
+    <thead #spanOverviewHead class='thead-default'>
+      <ng-container *ngIf="metricsOverlayModel">
+        <ng-container *ngIf="metricsOverlayModel.spanningMetrics">
+          <tr>
+            <th [style.padding.px]="0"
+              [colSpan]="project.columnModel.columns.length + 1">Multiple-Column Metrics</th>
+          </tr>
+          <ng-container *ngFor="let metric of metricsOverlayModel.spanningMetrics">
+            <tr>
+              <th [style.padding.px]="0"></th>
+              <th *ngFor="let col of metric.spanningColumns"
+                [style.padding.px]="0">{{col}}</th>
+            </tr>
+            <tr>
+              <th [style.padding.px]="0"
+                [style.paddingBottom.px]="6"
+                [style.paddingLeft.px]="8"
+                [style.paddingRight.px]="4"
+                [style.width.px]="colWidths[0]">{{metric.name}}
+              </th>
+              <th span-metric-col [ngClass]="checkValues(metric, cellIndex)" class="metric-overview-col"
+                [colSpan]="metric.spanningColumns.length"
+                [colWidths]="colWidths"
+                [metric]="metric"
+                [metricsOverlayModel]="metricsOverlayModel"
+                [spanMetricColors]="spanMetricColors"
+                [tooltip]="tooltip"
+                [style.padding.px]="0"
+                [style.paddingTop.px]="6"
+                (contextmenu)="onContextMenu($event, metric)"
+                (click)="onClickOverview($event, metric)"></th>
+            </tr>
+          </ng-container>
+        </ng-container>
+      </ng-container>
+    </thead>
+  </table>
+  <div class="raw-data-container">
+    <svg #tableOverlay scroll-bar-vis class="table-overlay"
+      [class.disabled]="disabled"
+      [style.top.px]="overlayOffsetTop"
+      [style.width.px]="overlayWidth"
+      [metricsOverlayModel]="metricsOverlayModel"
+      [colWidths]="colWidths"
+      [bodyHeight]="bodyHeight"
+      [rowsFrom]="rowsFrom"
+      [itemsPerPage]="itemsPerPage"
+      [columnMetricColors]="columnMetricColors"
+      [spanMetricColors]="spanMetricColors"
+      (click)="onClickRect($event)"></svg>
+    <table class='table metrics-overview'>
+      <thead #colOverviewHead class='thead-default'>
+        <ng-container *ngIf="metricsOverlayModel">
+          <ng-container *ngIf="metricsOverlayModel.availableMetrics">
+            <tr>
+              <th [style.padding.px]="0"
+                [colSpan]="project.columnModel.columns.length + 1">Single-Column Metrics</th>
+            </tr>
+            <tr>
+              <th [style.padding.px]="0"></th>
+              <th *ngFor="let column of project.columnModel.columns"
+                [style.padding.px]="0"
+                [style.paddingRight.px]="6"
+                [style.width.px]="colWidths[i+1]">{{column.name}}</th>
+            </tr>
+            <tr class='overview-row' *ngFor="let metric of metricsOverlayModel.availableMetrics; let rowIndex = index; trackBy: rowFn">
+              <th [style.padding.px]="0"
+                [style.paddingBottom.px]="6"
+                [style.paddingLeft.px]="8"
+                [style.paddingRight.px]="4">{{metric}}
+              </th>
+                <ng-container *ngFor="let metricColumn of metricsOverlayModel.metricColumns; let cellIndex = index; trackBy: trackByFn">
+                  <th metric-col [ngClass]="checkValues(metric, cellIndex)" class="metric-overview-col"
+                    [metricCol]="metricColumn" 
+                    [metric]="metric"
+                    [metricsOverlayModel]="metricsOverlayModel"
+                    [columnMetricColors]="columnMetricColors"
+                    [svgWidth]="colWidths[cellIndex+1]"
+                    [tooltip]="tooltip"
+                    [style.padding.px]="0"
+                    [style.paddingTop.px]="6"
+                    [style.width.px]="colWidths[cellIndex+1]"
+                    (contextmenu)="onContextMenu($event, metric, cellIndex)"
+                    (click)="onClickOverview($event, metric, cellIndex)"></th>
+              </ng-container>
+            </tr>
+          </ng-container>
+        </ng-container>
+        <tr #headerCols class='column-names'>
+          <th></th>
+          <th *ngFor="let column of project.columnModel.columns; let i = index; trackBy: trackByFn"
+            [style.padding.px]="0"
+            [style.paddingRight.px]="6">{{column.name}}</th>
+        </tr>
+      </thead>
+      <tbody scroll-raw-data-body
+        #rawDataBody 
+        class='metrics-overview'
+        [class.disabled]="disabled"
+        *ngIf="rowModel">
+        <tr #bodyCols *ngFor="let row of rowModel.rows; let rowIndex = index; let last = last; trackBy: trackRows">
+          <th
+            [style.width.px]="colWidths[0]"></th>
+          <td *ngFor="let column of project.columnModel.columns; let i = index; trackBy: trackByFn"
+            [style.padding.px]="0"
+            [style.paddingRight.px]="6"
+            [style.width.px]="colWidths[i+1]">
+            <ng-container *ngIf="row.cells[column.cellIndex]">{{row.cells[column.cellIndex].v}}</ng-container>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <pagination *ngIf="rowModel" class="pagination-sm"
+    [style.padding.px]="6" 
+    [totalItems]="rowModel.filtered" 
+    [(ngModel)]="page" 
+    [maxSize]="maxSize"
+    [boundaryLinks]="true" 
+    [itemsPerPage]="itemsPerPage"
+    [rotate]="false" 
+    (numPages)="numPages = $event" 
+    (pageChanged)="pageChanged($event)"
+    (click)="changePage($event)"></pagination>
+  <context-menu></context-menu>
+</div>

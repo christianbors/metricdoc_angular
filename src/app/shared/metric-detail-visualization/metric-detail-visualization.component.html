@@ -1,0 +1,15 @@
+<div *ngIf="metricSelection" 
+    #legend
+    [style.height.px]="viewOffsetTop - 49">
+  <h4 #detailTitle>Detail View  <button type="button" class="btn btn-info btn-xs">Info</button></h4>
+  <div #metricInfo>
+    <h5 *ngIf="metricSelection.length == 1">Selected Metric:</h5>
+    <h5 *ngIf="metricSelection.length > 1">Selected Metrics:</h5>
+    <ng-container *ngFor="let metric of metricSelection; let selectedIdx = index; trackBy: rowFn">
+      <h5><svg class="legend"><rect [style.fill]="getColor(metric)"></rect></svg>{{selectedColumns[selectedIdx]}} - {{metric.name}}</h5>
+    </ng-container>
+  </div>
+</div>
+<svg #visParent class="heatmap">
+  <rect></rect>
+</svg>

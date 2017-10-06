@@ -1,0 +1,109 @@
+<div class="row">
+  <div class="col-md-4">
+    <ngb-accordion #acc="ngbAccordion" activeIds=""
+      class="metric-info-panel">
+      <ngb-panel
+        title="Metric Detail"
+        [disabled]="!metricSelection">
+        <ng-template *ngIf="metricSelection" id="simpleList" class="list-group fixed-panel" ngbPanelContent>
+            <label>Name: {{metricSelection[0].name}}</label>
+            <br>
+            <label>Description: {{metricSelection[0].description}}</label>
+            <br>
+            <form action="">
+              <label>Data Type: </label>
+              <input type="radio" [(ngModel)]="metricSelection[0].datatype"
+                [checked]="metricSelection[0].datatype == 'string'"
+                (change)="onSelectionChange('string')"
+                name="datatype" 
+                value="string"> String
+              <input type="radio" [(ngModel)]="metricSelection[0].datatype"
+                [checked]="metricSelection[0].datatype == 'numeric'" 
+                (change)="onSelectionChange('numeric')"
+                name="datatype" 
+                value="numeric"> Numeric
+              <input type="radio" [(ngModel)]="metricSelection[0].datatype"
+                [checked]="metricSelection[0].datatype == 'datetime'" 
+                (change)="onSelectionChange('datetime')"
+                name="datatype" 
+                value="datetime"> Date/Time
+              <input type="radio" [(ngModel)]="metricSelection[0].datatype"
+                [checked]="metricSelection[0].datatype == 'unknown'"
+                (change)="onSelectionChange('unknown')"
+                name="datatype" 
+                value="categoric"> Undefined
+            </form>
+        </ng-template>
+      </ngb-panel>
+    </ngb-accordion>
+  </div>
+  <div class="col-md-8">
+    <ngb-accordion class="checks-panel" (panelChange)="beforeChange($event)">
+      <ngb-panel [disabled]="!metricSelection">
+        <ng-template ngbPanelTitle>
+          <div class="panel-title pull-left">
+           Quality Checks
+           <button class="btn btn-primary btn-sm" 
+            (click)="addCheck(); $event.stopPropagation(); $event.preventDefault()"
+            [disabled]="!metricSelection">Add Check</button>
+           </div>
+          <div *ngIf="metricSelection" class="panel-title pull-right">Concatenation: 
+            <div *ngIf="metricSelection" [(ngModel)]="metricSelection[0].concat" ngbRadioGroup name="concat">
+              <label class="btn btn-secondary btn-sm"
+                [style.margin]=0
+                (click)="clickConcat($event, 'AND')">
+                <input type="radio" value="AND"> AND
+              </label>
+              <label class="btn btn-secondary btn-sm"
+                [style.margin]=0
+                (click)="clickConcat($event, 'OR')">
+                <input type="radio" value="OR"> OR
+              </label>
+            </div></div>
+          <div class="clearfix"></div>
+        </ng-template>
+        <ng-template *ngIf="metricSelection" id="checksList" class="list-group fixed-panel" ngbPanelContent>
+          <ul class="list-group">
+            <ng-template #popContent>
+              <div ngbRadioGroup 
+                name="context-menu"
+                [(ngModel)]="selectedEvaluable">
+                <button class="btn btn-danger btn-sm"
+                  (click)="removeEvaluableSelection()">remove</button>
+                <button class="btn btn-sm"
+                  (click)="disableEvaluableSelection()">{{selectedEvaluable.disabled ? 'enable' : 'disable'}}</button>
+                <button class="btn btn-primary btn-sm">comment</button>
+              </div>
+            </ng-template>
+            <div class="input-group"
+              *ngIf="metricSelection[0].spanningEvaluable">
+              <span class="input-group-addon" placement="top" 
+                [ngbPopover]="popContent"
+                (click)="onSelectEvaluable(metricSelection[0].spanningEvaluable)">Edit</span>
+              <input class="form-control list-group-item pop metricInput" 
+                [(ngModel)]="metricSelection[0].spanningEvaluable.evaluable"
+                (keyup)="checkValidity($event)"
+                (click)="onSelectEvaluable(metricSelection[0].spanningEvaluable)">
+            </div>
+            <div class="input-group" *ngFor="let check of metricSelection[0].evalTuples" #popover="">
+                <span class="input-group-addon" placement="top"
+                  [ngbPopover]="popContent"
+                  (click)="onSelectEvaluable(check)">Edit</span>
+                <input class="form-control list-group-item pop metricInput"
+                  [(ngModel)]="check.evaluable"
+                  (keyup)="checkValidity($event)"
+                  (click)="onSelectEvaluable(check)"
+                  placement="bottom"
+                  (ngbTooltip)="check.comment">
+            </div>
+          </ul>
+        </ng-template>
+      </ngb-panel>
+    </ngb-accordion>
+  </div>
+</div>
+<div *ngIf="alertType" class="row">
+  <div class="col-md-12">
+    <ngb-alert *ngIf="alertType != 'info'" [type]="alertType">{{ checkFeedback }}</ngb-alert>
+  </div>
+</div>

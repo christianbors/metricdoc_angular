@@ -1,0 +1,66 @@
+@import "../globals";
+
+div.raw-data-container {
+    overflow-x: scroll;
+    position: relative;
+    width: 100%;
+}
+
+th.metric-overview-col:hover {
+    background: lightgrey;
+}
+
+th.metric-overview-col.active {
+    background: lightgrey;
+    border-color: steelblue;
+}
+
+table.metrics-overview {
+    margin: 0px;
+
+    thead, tbody { 
+        display: block; 
+        margin-right: 15px;
+    }
+
+    thead {
+        th.active {
+            background: lightgrey;
+            border-color: steelblue;
+        }
+    }
+
+    tbody {
+        height: $raw-data-height;
+        overflow-y: auto;
+        margin-right: 0px;
+
+        tr.highlight {
+            background: lightgrey;
+            color: steelblue;
+        }
+    }
+
+    tbody.disabled {
+        background: lightgrey;
+
+        tr {
+            color: darkgrey;
+        }
+    }
+}
+
+table.spanning-metrics-overview {
+    margin-right: 0px;
+    margin-bottom: 0px;
+}
+
+svg.table-overlay {
+    height: $raw-data-height;
+    position: absolute;
+    pointer-events: none;
+}
+
+svg.table-overlay.disabled {
+    display: none;
+}
