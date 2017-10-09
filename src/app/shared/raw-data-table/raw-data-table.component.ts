@@ -1,6 +1,6 @@
 import { Component, Directive, Injectable, HostListener, 
   OnInit, AfterContentChecked, AfterViewChecked,
-  Input, ViewChild, Output, EventEmitter, SimpleChanges, OnChanges, ChangeDetectionStrategy } from '@angular/core';
+  Input, ViewChild, Output, EventEmitter } from '@angular/core';
 
 import { OpenRefineService } from '../open-refine/open-refine.service';
 
@@ -23,7 +23,7 @@ import * as d3Selection from 'd3-selection';
   styleUrls: ['./raw-data-table.component.scss'],
   providers: [ OpenRefineService, ContextMenuService ]
 })
-export class RawDataTableComponent implements OnInit, AfterContentChecked, AfterViewChecked, OnChanges {
+export class RawDataTableComponent implements OnInit, AfterContentChecked, AfterViewChecked {
   @Input() private project:OpenRefineProject;
   @Input() private metricsOverlayModel:MetricsOverlayModel;
   @Input() private columnMetricColors;
@@ -47,12 +47,13 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   private overlayOffsetTop:number = 0;
   private overlayWidth:number = 0;
   private bodyHeight: number = 0;
-  @Input() private colWidths: number[] = [];
   private colOffset: number[] = [];
 
+  @Input() private colWidths: number[] = [];
   @Output() onOverviewMetricSelected = new EventEmitter();
   @Output() tableHeightChanged = new EventEmitter();
   @Output() pageChangedEmitter = new EventEmitter();
+  @Output() metricsChangedEmitter = new EventEmitter();
 
   @ViewChild(ContextMenuComponent) public basicMenu: ContextMenuComponent;
   private currentContextIndex: number = 0;
@@ -166,6 +167,9 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
       this.overlayOffsetTop = colBox.height;
       this.overlayWidth = colBox.width;
       this.bodyHeight = this.dataBody.nativeElement.getBoundingClientRect().height;
+    }
+    if (this.tableOverlay) {
+      this.tableOverlay.updateOverlayPositions();
     }
   }
 
@@ -300,5 +304,15 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
       if (this.selectedMetricCells[item].indexOf(cellIndex) >= 0)
         return 'active';
     }
+  }
+
+  public handleSelectionUpdated($event: any) {
+    console.log("selection updated... do something?");
+  }
+
+  public updateTableOverlay() {
+    this.tableOverlay.fillCols();
+    this.tableOverlay.fillScrollVis();
+    this.tableOverlay.updateOverlayPositions();
   }
 }

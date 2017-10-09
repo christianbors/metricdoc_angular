@@ -153,6 +153,7 @@ export class OpenRefineComponent implements OnInit, OnChanges {
         metricColumn[0].metrics[this.selectedMetrics[i].name] = this.selectedMetrics[i];
       }
     }
+    this.rawDataTable.updateTableOverlay();
   }
 
   handleOverviewSelection(selectedMetrics: any) {

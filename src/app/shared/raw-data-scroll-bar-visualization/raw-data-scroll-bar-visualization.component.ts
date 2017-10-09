@@ -55,7 +55,10 @@ export class RawDataScrollBarVisualizationComponent implements OnInit, OnChanges
     }
   }
 
-  private fillCols() {
+  public fillCols() {
+    d3.select(this.htmlElement)
+      .selectAll('g.metrics-overlay')
+      .remove();
     this.overlay = d3.select(this.htmlElement)
       .selectAll('g.metrics-overlay')
       .data(d => {
@@ -144,7 +147,7 @@ export class RawDataScrollBarVisualizationComponent implements OnInit, OnChanges
     });
   }
 
-  private updateOverlayPositions() {    
+  public updateOverlayPositions() {    
     let from = this.rowsFrom;
     let to = this.rowsFrom + this.itemsPerPage;
     this.overlayScaleY = d3.scaleLinear()
