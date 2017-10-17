@@ -20,20 +20,16 @@ import { OpenRefineProject } from './model/open-refine-project';
 export class OpenRefineService {
   private openRefineServerUrl = 'http://localhost:3333/command/';
   private isSuccess;
-  private params;
 
   model: MetricsOverlayModel;
 
   constructor (private http: Http, private jsonp: Jsonp) {
-  	this.params = new URLSearchParams();
-  	//TODO: replace with variable parameter
-    this.params.set('project', '2130755782250');
+  	// this.params = new URLSearchParams();
+  	// //TODO: replace with variable parameter
   }
 
   private extractData(res: Response) {
   	// response => <string[]> response.json()[1];
-    this.params = new URLSearchParams();
-    this.params.set('project', '2130755782250');
 
     let body = res.json();
     if(body.availableMetrics 
@@ -46,51 +42,68 @@ export class OpenRefineService {
     return body || { };
   }
 
-  getOverlayModel () : Observable<MetricsOverlayModel> {  	
-  	return this.http.get(this.openRefineServerUrl + 'metric-doc/getMetricsOverlayModel', { search: this.params })
+  setupProject(projectId: any) : Observable<MetricsOverlayModel> {
+    let params = this.initializeParams(projectId);
+    params.set('computeDuplicates', 'false');
+    return this.http.post(this.openRefineServerUrl + 'metric-doc/metricsOverlayModel', { search: params })
+      .map(this.extractData)
+      .catch(this.handleError);
+  }
+
+  getAllProjectMetadata() : Observable<any> {
+    return this.http.get(this.openRefineServerUrl + 'core/get-all-project-metadata', {})
+      .map(this.extractData)
+      .catch(this.handleError);
+  }
+
+  getOverlayModel (projectId: any) : Observable<MetricsOverlayModel> {
+
+  	return this.http.get(this.openRefineServerUrl + 'metric-doc/getMetricsOverlayModel', { search: this.initializeParams(projectId) })
   		.map(this.extractData)
   		.catch(this.handleError);
   }
 
-  getProjectMetadata () {
-  	return this.http.get(this.openRefineServerUrl + 'core/get-project-metadata', { search: this.params })
+  getProjectMetadata (projectId: any) {
+  	return this.http.get(this.openRefineServerUrl + 'core/get-project-metadata', { search: this.initializeParams(projectId) })
   		.map(this.extractData)
   		.catch(this.handleError);
   }
 
-  getRefineProject () : Observable<OpenRefineProject> {
-  	return this.http.get(this.openRefineServerUrl + 'core/get-models', { search: this.params })
+  getRefineProject (projectId: any) : Observable<OpenRefineProject> {
+  	return this.http.get(this.openRefineServerUrl + 'core/get-models', { search: this.initializeParams(projectId) })
   		.map(this.extractData)
   		.catch(this.handleError);
   }
 
-  getRows (first: number, limit: number) {
-  	this.params.set('start', first);
-  	this.params.set('limit', limit);
-  	return this.http.get(this.openRefineServerUrl + 'core/get-rows', { search: this.params })
+  getRows (projectId: any, first: any, limit: any) {
+    let params = this.initializeParams(projectId);
+  	params.set('start', first);
+  	params.set('limit', limit);
+  	return this.http.get(this.openRefineServerUrl + 'core/get-rows', { search: params })
   		.map(this.extractData)
   		.catch(this.handleError);
   }
 
-  updateMetric ( metric: any, column: any) {
-    this.params.set('metric', JSON.stringify(metric));
+  updateMetric (projectId: any, metric: any, column: any) {
+    let params = this.initializeParams(projectId);
+    params.set('metric', JSON.stringify(metric));
     if(column instanceof Array) {
-      this.params.set('columns', JSON.stringify(column));
+      params.set('columns', JSON.stringify(column));
     } else {
-      this.params.set('column', column);
+      params.set('column', column);
     }
-    return this.http.post(this.openRefineServerUrl + 'metric-doc/updateMetric', this.params)
+    return this.http.post(this.openRefineServerUrl + 'metric-doc/updateMetric', params)
       .map(this.extractData)
       .catch(this.handleError);
   }
 
-  evaluateMetrics () {
-    return this.http.post(this.openRefineServerUrl + 'metric-doc/evaluateMetrics', this.params)
+  evaluateMetrics (projectId: string) {
+    return this.http.post(this.openRefineServerUrl + 'metric-doc/evaluateMetrics', this.initializeParams(projectId))
       .map(this.extractData)
       .catch(this.handleError);
   }
 
-  evaluateSelection (metricSelection: any[], columnSelection: String[]) {
+  evaluateSelection (projectId: any, metricSelection: any[], columnSelection: any[]) {
     let selection = [];
     for (let selIdx = 0; selIdx < metricSelection.length; ++selIdx) {
       metricSelection[selIdx].dirtyIndices = [];
@@ -101,18 +114,21 @@ export class OpenRefineService {
         selection.push({metric: JSON.stringify(metricSelection[selIdx]), column: columnSelection[selIdx]});
       }
     }
-    this.params.set('selection', JSON.stringify(selection));
-    return this.http.post(this.openRefineServerUrl + 'metric-doc/evaluateSelectedMetric', this.params)
+    let params = this.initializeParams(projectId);
+    params.set('selection', JSON.stringify(selection));
+    return this.http.post(this.openRefineServerUrl + 'metric-doc/evaluateSelectedMetric', params)
       .map(this.extractData)
       .catch(this.handleError);
   }
 
-  previewExpression (expression: string, cellIdx: any) {
+  previewExpression (projectId: any, expression: string, cellIdx: any) {
     let rowIdx: number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-    this.params.set('rowIndices', JSON.stringify(rowIdx));
-    this.params.set('expression', 'grel:'+ expression);
-    this.params.set('cellIndex', cellIdx);
-    return this.http.post(this.openRefineServerUrl + 'core/preview-expression', this.params)
+
+    let params = this.initializeParams(projectId);
+    params.set('rowIndices', JSON.stringify(rowIdx));
+    params.set('expression', 'grel:'+ expression);
+    params.set('cellIndex', cellIdx);
+    return this.http.post(this.openRefineServerUrl + 'core/preview-expression', params)
       .map(this.extractData)
       .catch(this.handleError);
   }
@@ -130,5 +146,11 @@ export class OpenRefineService {
     }
     console.error(errMsg);
     return Observable.throw(errMsg);
+  }
+
+  private initializeParams(projectId: any):URLSearchParams {
+    let params:URLSearchParams = new URLSearchParams();
+    params.set('project', projectId);
+    return params;
   }
 }

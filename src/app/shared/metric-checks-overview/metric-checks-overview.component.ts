@@ -83,11 +83,11 @@ export class MetricChecksOverviewComponent implements OnInit {
     if(event.key === "Enter") {
       //TODO: save evaluable to metric
       this.metricSelection[0].dirtyIndices = [];
-      this.openRefineService.updateMetric(this.metricSelection[0], this.columnSelection[0])
+      this.openRefineService.updateMetric(this.project.id, this.metricSelection[0], this.columnSelection[0])
         .subscribe(response => {
           // console.log("success");
           this.metricSelection[0] = response;
-          this.openRefineService.evaluateSelection(this.metricSelection, this.columnSelection)
+          this.openRefineService.evaluateSelection(this.project.id, this.metricSelection, this.columnSelection)
             .subscribe(response => {
               this.metricSelection = response.metricList;
               this.onSelectionUpdated.emit({metrics: this.metricSelection, columns: this.columnSelection});
@@ -102,7 +102,7 @@ export class MetricChecksOverviewComponent implements OnInit {
       }
       return value.name == colName;
     });
-    this.openRefineService.previewExpression(this.selectedEvaluable.evaluable, col.cellIndex)
+    this.openRefineService.previewExpression(this.project.id, this.selectedEvaluable.evaluable, col.cellIndex)
       .subscribe(response => {
         this.checkFeedback = response.message;
 

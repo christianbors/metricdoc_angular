@@ -7,11 +7,9 @@ import { HttpModule, JsonpModule } from '@angular/http';
 import { RouterModule, Routes } from '@angular/router';
 
 import { AppComponent } from './app.component';
-import { HomeComponent } from './home/home.component';
 import { BarchartComponent } from './shared/barchart/barchart.component';
 import { OpenRefineComponent } from './shared/open-refine/open-refine.component';
 import { RawDataTableComponent } from './shared/raw-data-table/raw-data-table.component';
-import { MetadataTestComponent } from './shared/metadata-test/metadata-test.component';
 import { MetricOverviewComponent } from './shared/metric-overview/metric-overview.component';
 import { MetricChecksOverviewComponent } from './shared/metric-checks-overview/metric-checks-overview.component';
 import { QualityHeaderColComponent } from './shared/quality-header-col/quality-header-col.component';
@@ -23,39 +21,57 @@ import { RawDataScrollBarVisualizationComponent } from './shared/raw-data-scroll
 import { MetricDetailVisualizationComponent } from './shared/metric-detail-visualization/metric-detail-visualization.component';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { CheckInputDirectiveDirective } from './shared/metric-checks-overview/check-input-directive.directive';
+import { ProjectListComponent } from './project-list/project-list.component';
+import { CreateProjectComponent } from './create-project/create-project.component';
+import { ProjectListPipe, NonMetricsProjectListPipe } from './project-list/project-list.pipe';
 
 const appRoutes: Routes = [
-  { path: 'home', component: HomeComponent },
-  // {
-  //   path: 'heroes',
-  //   component: HeroListComponent,
-  //   data: { title: 'Heroes List' }
-  // },
-  // { path: '',
-  //   redirectTo: '/heroes',
-  //   pathMatch: 'full'
-  // },
-  { path: '**', component: HomeComponent }
+  {
+    path: '',
+    redirectTo: '/list-projects',
+    pathMatch: 'full'
+  },
+  { path: 'home',
+    redirectTo: '/list-projects',
+    pathMatch: 'full'
+  },
+  {
+    path: 'list-projects',
+    component: ProjectListComponent,
+    // Use it to store items such as page titles, breadcrumb text, and other read-only, static data. You'll use the resolve guard to retrieve dynamic data later in the guide.
+    data: { title: 'MetricDoc Projects' }
+  },
+  { 
+    path: 'new-project',
+    component: CreateProjectComponent,
+    data: { title: 'Create New MetricDoc Project'}
+  },
+  {
+    path: 'project/:projectId',
+    component: OpenRefineComponent
+  },
+  { path: '**', component: ProjectListComponent }
 ];
 
 @NgModule({
   declarations: [
     AppComponent,
     BarchartComponent,
-    HomeComponent,
     OpenRefineComponent,
     RawDataTableComponent,
-    MetadataTestComponent,
     MetricOverviewComponent,
     MetricChecksOverviewComponent,
     QualityHeaderColComponent,
     SpanQualityHeaderColComponent,
     RawDataScrollBarVisualizationComponent,
     MetricDetailVisualizationComponent,
-    CheckInputDirectiveDirective
+    CheckInputDirectiveDirective,
+    ProjectListComponent,
+    CreateProjectComponent,
+    ProjectListPipe, NonMetricsProjectListPipe
   ],
   imports: [
-    RouterModule.forRoot(appRoutes),
+    RouterModule.forRoot(appRoutes, { enableTracing: true }),
     AccordionModule.forRoot(),
     PaginationModule.forRoot(),
     NgbModule.forRoot(),

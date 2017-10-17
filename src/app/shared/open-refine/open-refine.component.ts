@@ -1,9 +1,10 @@
 // Observable Version
-import { Component, OnInit, Input, OnChanges, SimpleChanges, ViewChild, trigger,
-  state,
-  style,
-  transition,
-  animate, keyframes }	from '@angular/core';
+import { Component, OnInit, Input, OnChanges, SimpleChanges, ViewChild, 
+  trigger, state, style, transition, animate, keyframes }	from '@angular/core';
+import { Router, ActivatedRoute, ParamMap } from '@angular/router';
+import { Subscription }   from 'rxjs/Subscription';
+
+import { RoutingHelperService } from '../../routing-helper.service';
 import { MetricsOverlayModel }	from './model/metrics-overlay-model';
 import { Metric } from './model/metric';
 import { ProjectMetadata }		from './model/project-metadata';
@@ -48,16 +49,19 @@ import { NgbModule, NgbAccordion, NgbRadioGroup } from '@ng-bootstrap/ng-bootstr
 export class OpenRefineComponent implements OnInit, OnChanges {
   errorMessage: string;
   mode = 'Observable';
+  subscription: Subscription;
 
-  state: string = 'inactive';
-  expanded: boolean = false;
+  private state: string = 'inactive';
+  private expanded: boolean = false;
+
+  private projectId: string
 
   @ViewChild(RawDataTableComponent)
   private rawDataTable: RawDataTableComponent;
 
-  projectMetadata: ProjectMetadata;
-  openRefineProject: OpenRefineProject;
-  rowModel: any;
+  private projectMetadata: ProjectMetadata;
+  private openRefineProject: OpenRefineProject;
+  private rowModel: any;
 
   private columnMetricColors: any;
   private spanMetricColors: any;
@@ -69,12 +73,24 @@ export class OpenRefineComponent implements OnInit, OnChanges {
 
   private detailViewOffsetTop: number;
 
-  constructor (private openRefineService: OpenRefineService) {}
+  constructor (  private route: ActivatedRoute,
+    private router: Router,
+    private routineHelperService: RoutingHelperService,
+    private openRefineService: OpenRefineService
+  ) {
+    this.routineHelperService.hideSidebar();
+    // this.subscription = routineHelperService.sidebarShown$.subscribe(
+    //   sidebarShown => {
+    //     this.sidebarShown = sidebarShown;
+    // });
+  }
 
   ngOnInit() { 
+    this.projectId = this.route.snapshot.paramMap.get('projectId');
+
   	this.getOpenRefineProject();
   	this.getProjectMetadata();
-    this.openRefineService.getRows(0, 1).subscribe(rowModel => this.rowModel = rowModel);
+    this.openRefineService.getRows(this.projectId, 0, 1).subscribe(rowModel => this.rowModel = rowModel);
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -85,7 +101,7 @@ export class OpenRefineComponent implements OnInit, OnChanges {
   }
 
   getOpenRefineProject() {
-    this.openRefineService.getRefineProject()
+    this.openRefineService.getRefineProject(this.projectId)
       .subscribe(
         openRefineProject => {
           this.openRefineProject = openRefineProject;
@@ -108,7 +124,7 @@ export class OpenRefineComponent implements OnInit, OnChanges {
   }
 
   getProjectMetadata() {
-    this.openRefineService.getProjectMetadata()
+    this.openRefineService.getProjectMetadata(this.projectId)
       .subscribe(
         projectMetadata => this.projectMetadata = projectMetadata,
         error => this.errorMessage = <any>error);

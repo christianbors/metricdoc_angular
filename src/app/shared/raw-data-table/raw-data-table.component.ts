@@ -24,6 +24,7 @@ import * as d3Selection from 'd3-selection';
   providers: [ OpenRefineService, ContextMenuService ]
 })
 export class RawDataTableComponent implements OnInit, AfterContentChecked, AfterViewChecked {
+  @Input() private projectId:any;
   @Input() private project:OpenRefineProject;
   @Input() private metricsOverlayModel:MetricsOverlayModel;
   @Input() private columnMetricColors;
@@ -162,7 +163,7 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
 
     }
 
-    if (this.colHead) {
+    if (this.colHead && this.dataBody) {
       let colBox = this.colHead.nativeElement.getBoundingClientRect();
       this.overlayOffsetTop = colBox.height;
       this.overlayWidth = colBox.width;
@@ -191,7 +192,7 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   pageChanged(event:any):void {
     this.page = event.page;
     this.rowsFrom = ( (this.page-1) * this.itemsPerPage);
-    this.openRefineService.getRows(this.rowsFrom, this.itemsPerPage)
+    this.openRefineService.getRows(this.projectId, this.rowsFrom, this.itemsPerPage)
       .subscribe(rowModel => {
         this.rowModel = rowModel;
         this.updated = true;
