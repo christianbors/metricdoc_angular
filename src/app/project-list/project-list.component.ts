@@ -4,7 +4,6 @@ import {
 } from '@angular/core';
 import { Subscription }   from 'rxjs/Subscription';
 
-import { RoutingHelperService } from '../routing-helper.service';
 import { OpenRefineService } from '../shared/open-refine/open-refine.service';
 import { OpenRefineProject } from '../shared/open-refine/model/open-refine-project';
 
@@ -22,11 +21,8 @@ export class ProjectListComponent implements OnInit {
 
   subscription: Subscription;
 
-  constructor(private routineHelperService: RoutingHelperService, private openRefineService: OpenRefineService) { 
-    this.subscription = routineHelperService.sidebarShown$.subscribe(
-      sidebarShown => {
-        this.sidebarShown = sidebarShown;
-    });
+  constructor(private openRefineService: OpenRefineService) { 
+
     this.openRefineService.getAllProjectMetadata().subscribe(
       refineProjects => {
           this.refineProjects = refineProjects.projects;
@@ -37,13 +33,5 @@ export class ProjectListComponent implements OnInit {
   }
 
   ngOnInit() {
-  }
-
-  hideSidebar() {
-    this.routineHelperService.hideSidebar();
-  }
-
-  ngOnDestroy() {
-    this.subscription.unsubscribe();
   }
 }

@@ -1,5 +1,4 @@
 <nav class="navbar navbar-toggleable-md navbar-light bg-faded">
-<!-- <nav class="navbar navbar-toggleable-md navbar-inverse bg-faded" role="navigation"> -->
   <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#metricdocDropdown" aria-controls="metricdocDropdown" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
@@ -17,20 +16,6 @@
           <li><a class="nav-link nav-item" href="" id="exportMetrics">Recalculate All ...</a></li>
         </ul>
       </li>
- 
-      <!-- <li class="nav-item">
-        <a class="nav-link" href="" id="addMetric" data-toggle="modal" data-target="#addMetricModal">Add Metric</a>
-      </li> -->
-      <!-- <li class="nav-item">
-        <a class="nav-link" href="" id="recalculate">Recalculate Metrics</a>
-      </li> -->
-      <!-- <li class="nav-item dropdown">
-        <a class="nav-link nav-item dropdown-toggle" href="" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Export <span class="caret"></span></a>
-        <ul class="dropdown-menu">
-          <li><a class="nav-link nav-item" href="" id="exportQuality">Export Quality Values</a></li>
-          <li><a class="nav-link nav-item" href="" id="exportMetrics">Export Quality Metrics</a></li>
-        </ul>
-      </li> -->
      <li class="nav-item dropdown">
         <a class="nav-link nav-item dropdown-toggle" href="" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Metrics Library<span class="caret"></span></a>
         <ul class="dropdown-menu">
@@ -50,22 +35,25 @@
   </div>
 
 </nav>
+
 <div class="container-fluid">
   <div class="row">
-    <nav class="col-sm-3 col-md-2 hidden-xs-down bg-faded sidebar" *ngIf="sidebarShown">
-      <ul class="nav nav-pills flex-column">
+    <nav class="col-sm-3 col-md-2 hidden-xs-down bg-faded sidebar"
+      [hidden]="!sidebarShown">
+      <ul class="nav nav-pills flex-column" *ngIf="navbarPos">
         <li class="nav-item">
-          <a class="nav-link active" href="/list-projects">Available Projects <span class="sr-only">(current)</span></a>
+          <a class="nav-link" href="/list-projects"
+            [class.active]="navbarPos == '/list-projects'">Available Projects <span class="sr-only">(current)</span></a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/create-project">Create New Project</a>
+          <a class="nav-link" href="/create-project"
+            [class.active]="navbarPos.includes('/create-project')"
+            (click)="this.routingHelperService.navigateTo('create-project')">Create New Project</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/metric-browser">Metric Browser</a>
+          <a class="nav-link" href="/metric-browser"
+            [class.active]="navbarPos.includes('/metric-browser')">Metric Browser</a>
         </li>
-        <!-- <li class="nav-item">
-          <a class="nav-link" href="/project-export">Export</a>
-        </li> -->
       </ul>
     </nav>
     <div [class.col-sm-9]="sidebarShown"
@@ -74,3 +62,18 @@
     </div>
   </div>
 </div>
+
+ 
+<!-- <li class="nav-item">
+  <a class="nav-link" href="" id="addMetric" data-toggle="modal" data-target="#addMetricModal">Add Metric</a>
+</li> -->
+<!-- <li class="nav-item">
+  <a class="nav-link" href="" id="recalculate">Recalculate Metrics</a>
+</li> -->
+<!-- <li class="nav-item dropdown">
+  <a class="nav-link nav-item dropdown-toggle" href="" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Export <span class="caret"></span></a>
+  <ul class="dropdown-menu">
+    <li><a class="nav-link nav-item" href="" id="exportQuality">Export Quality Values</a></li>
+    <li><a class="nav-link nav-item" href="" id="exportMetrics">Export Quality Metrics</a></li>
+  </ul>
+</li> -->

@@ -4,7 +4,6 @@ import { Component, OnInit, Input, OnChanges, SimpleChanges, ViewChild,
 import { Router, ActivatedRoute, ParamMap } from '@angular/router';
 import { Subscription }   from 'rxjs/Subscription';
 
-import { RoutingHelperService } from '../../routing-helper.service';
 import { MetricsOverlayModel }	from './model/metrics-overlay-model';
 import { Metric } from './model/metric';
 import { ProjectMetadata }		from './model/project-metadata';
@@ -75,10 +74,8 @@ export class OpenRefineComponent implements OnInit, OnChanges {
 
   constructor (  private route: ActivatedRoute,
     private router: Router,
-    private routineHelperService: RoutingHelperService,
     private openRefineService: OpenRefineService
   ) {
-    this.routineHelperService.hideSidebar();
     // this.subscription = routineHelperService.sidebarShown$.subscribe(
     //   sidebarShown => {
     //     this.sidebarShown = sidebarShown;

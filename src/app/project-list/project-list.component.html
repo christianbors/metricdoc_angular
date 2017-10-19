@@ -25,9 +25,9 @@
   </li>
   <li class="list-group-item list-group-item-action flex-column" 
     *ngFor="let proj of (refineProjects | metricProjects); let rowIndex = index; trackBy: rowFn"
-    [routerLink]="['/project', proj.key]"
+    [routerLink]="['/metric-project', proj.key]"
     routerLinkActive="active"
-    (click)="hideSidebar()">
+    (click)="routineHelperService.hideSidebar(); routineHelperService.navigateTo('project')">
     <div class="d-flex w-100 justify-content-between">
       <div class="float-left">
         <span class="fa fa-calculator fa-lg"></span>
@@ -49,8 +49,9 @@
   </li>
   <!-- (click)="openProject(rowIndex)"> -->
   <li class="list-group-item list-group-item-action flex-column disabled" *ngFor="let proj of (refineProjects | nonMetricProjects); let rowIndex = index; trackBy: rowFn"
-    [routerLink]="['/new-project', proj.key]"
-    routerLinkActive="active">
+    [routerLink]="['/create-project', proj.key]"
+    routerLinkActive="active"
+    (click)="this.routineHelperService.navigateTo('create-project')">
     <div class="d-flex w-100 justify-content-between">
       <div class="float-left">
         <span class="fa fa-calculator fa-lg"></span>

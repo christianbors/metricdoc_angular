@@ -35,6 +35,7 @@
     "d3-tip": "^0.8.0-alpha.1",
     "font-awesome": "^4.7.0",
     "ng-bootstrap": "^1.6.3",
+    "ng-sidebar": "^6.0.4",
     "ng2-page-scroll": "^4.0.0-beta.6",
     "ng2-tooltip-directive": "^1.0.3",
     "ngx-bootstrap": "^1.6.6",

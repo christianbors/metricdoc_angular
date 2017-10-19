@@ -1,25 +1,28 @@
-import { Component, HostBinding } from '@angular/core';
-import { Router } from '@angular/router';
-import { RoutingHelperService } from './routing-helper.service';
+import { Component, HostBinding, AnimationTransitionEvent } from '@angular/core';
+import { Router, NavigationEnd } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css'],
-  providers: [ RoutingHelperService ]
+  styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
   private sidebarShown:boolean = true;
+  private navbarPos:string;
 
-  constructor(private routingHelperService: RoutingHelperService) {
-    routingHelperService.sidebarShown$.subscribe(
-      sidebarShown => {
-        this.sidebarShown = sidebarShown;
-        console.log("show sidebar: " + this.sidebarShown);
+  constructor(private router: Router) {
+    router.events.subscribe(
+      (change:any) => {
+        if(change instanceof NavigationEnd) {
+          this.navbarPos = change.urlAfterRedirects;
+
+          if (change.urlAfterRedirects.includes('metric-project')) {
+            this.sidebarShown = false;
+          } else {
+            this.sidebarShown = true;
+          }
+          console.log('show sidebar: ' + this.sidebarShown);
+        }
       });
   }
-
-  // onNavigated(showSidebar: boolean) {
-  //   this.sidebarShown = showSidebar;
-  // }
 }

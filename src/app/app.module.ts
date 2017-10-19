@@ -14,16 +14,17 @@ import { MetricOverviewComponent } from './shared/metric-overview/metric-overvie
 import { MetricChecksOverviewComponent } from './shared/metric-checks-overview/metric-checks-overview.component';
 import { QualityHeaderColComponent } from './shared/quality-header-col/quality-header-col.component';
 import { SpanQualityHeaderColComponent } from './shared/span-quality-header-col/span-quality-header-col.component';
-
-import { AccordionModule, PaginationModule, } from 'ng-bootstrap'
-import { ContextMenuModule } from 'angular2-contextmenu';
 import { RawDataScrollBarVisualizationComponent } from './shared/raw-data-scroll-bar-visualization/raw-data-scroll-bar-visualization.component';
 import { MetricDetailVisualizationComponent } from './shared/metric-detail-visualization/metric-detail-visualization.component';
-import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { CheckInputDirectiveDirective } from './shared/metric-checks-overview/check-input-directive.directive';
 import { ProjectListComponent } from './project-list/project-list.component';
 import { CreateProjectComponent } from './create-project/create-project.component';
 import { ProjectListPipe, NonMetricsProjectListPipe } from './project-list/project-list.pipe';
+
+import { AccordionModule, PaginationModule, } from 'ng-bootstrap'
+import { ContextMenuModule } from 'angular2-contextmenu';
+import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { SidebarModule } from 'ng-sidebar';
 
 const appRoutes: Routes = [
   {
@@ -42,12 +43,17 @@ const appRoutes: Routes = [
     data: { title: 'MetricDoc Projects' }
   },
   { 
-    path: 'new-project',
+    path: 'create-project',
+    component: CreateProjectComponent,
+    data: { title: 'Create New MetricDoc Project'}
+  },
+  { 
+    path: 'create-project/:projectId',
     component: CreateProjectComponent,
     data: { title: 'Create New MetricDoc Project'}
   },
   {
-    path: 'project/:projectId',
+    path: 'metric-project/:projectId',
     component: OpenRefineComponent
   },
   { path: '**', component: ProjectListComponent }
@@ -75,6 +81,7 @@ const appRoutes: Routes = [
     AccordionModule.forRoot(),
     PaginationModule.forRoot(),
     NgbModule.forRoot(),
+    SidebarModule.forRoot(),
     BrowserModule,
     BrowserAnimationsModule,
     FormsModule,
