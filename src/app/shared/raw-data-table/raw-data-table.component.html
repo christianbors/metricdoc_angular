@@ -72,7 +72,10 @@
                 [style.paddingRight.px]="4">{{metric}}
               </th>
                 <ng-container *ngFor="let metricColumn of metricsOverlayModel.metricColumns; let cellIndex = index; trackBy: trackByFn">
-                  <th metric-col [ngClass]="checkValues(metric, cellIndex)" class="metric-overview-col"
+                  <th class="metric-overview-col"
+                    *ngIf="metricColumn" 
+                    metric-col 
+                    [ngClass]="checkValues(metric, cellIndex)" 
                     [metricCol]="metricColumn" 
                     [metric]="metric"
                     [metricsOverlayModel]="metricsOverlayModel"
@@ -81,9 +84,10 @@
                     [tooltip]="tooltip"
                     [style.padding.px]="0"
                     [style.paddingTop.px]="6"
-                    (contextmenu)="onContextMenu($event, metric, cellIndex)"
+                    (contextmenu)="onContextMenu($event, metricColumn, metricsOverlayModel.availableMetrics[rowIndex])"
                     (click)="onClickOverview($event, metric, cellIndex)"></th>
                     <!-- [style.width.px]="colWidths[cellIndex+1]" -->
+                    <!-- (contextmenu)="onContextMenu($event, metric, cellIndex)" -->
               </ng-container>
             </tr>
           </ng-container>
@@ -124,5 +128,21 @@
     (numPages)="numPages = $event" 
     (pageChanged)="pageChanged($event)"
     (click)="changePage($event)"></pagination>
-  <context-menu></context-menu>
+  <context-menu #existingMetric>
+    <!-- <ng-template contextMenuItem (execute)="showMessage('Hi, ' + $event?.item?.name)">
+      Say hi!
+    </ng-template> -->
+    <ng-template contextMenuItem divider="true"></ng-template>
+    <ng-template contextMenuItem let-item (execute)="deleteMetric($event.item)"> <!-- showMessage($event.item.name + ' said: ' + $event.item.otherProperty) -->
+      Bye, {{item?.name}}
+    </ng-template>
+    <ng-template contextMenuItem passive="true">
+      Input something: <input type="text">
+    </ng-template>
+  </context-menu>
+  <context-menu #newMetric>
+    <ng-template contextMenuItem let-item>
+      Add Metric: {{item}}
+    </ng-template>
+  </context-menu>
 </div>

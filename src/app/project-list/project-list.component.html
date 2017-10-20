@@ -26,8 +26,7 @@
   <li class="list-group-item list-group-item-action flex-column" 
     *ngFor="let proj of (refineProjects | metricProjects); let rowIndex = index; trackBy: rowFn"
     [routerLink]="['/metric-project', proj.key]"
-    routerLinkActive="active"
-    (click)="routineHelperService.hideSidebar(); routineHelperService.navigateTo('project')">
+    routerLinkActive="active">
     <div class="d-flex w-100 justify-content-between">
       <div class="float-left">
         <span class="fa fa-calculator fa-lg"></span>

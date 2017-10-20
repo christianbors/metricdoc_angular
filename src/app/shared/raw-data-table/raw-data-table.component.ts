@@ -10,7 +10,7 @@ import { MetricsOverlayModel } from '../open-refine/model/metrics-overlay-model'
 import { Metric } from '../open-refine/model/metric';
 import { Row } from '../data-model/row';
 
-import { ContextMenuService, ContextMenuComponent } from 'angular2-contextmenu';
+import { ContextMenuComponent, ContextMenuService } from 'ngx-contextmenu';
 
 import * as d3 from 'd3';
 import * as d3Tip from 'd3-tip';
@@ -21,7 +21,7 @@ import * as d3Selection from 'd3-selection';
   selector: 'app-raw-data-table',
   templateUrl: './raw-data-table.component.html',
   styleUrls: ['./raw-data-table.component.scss'],
-  providers: [ OpenRefineService, ContextMenuService ]
+  providers: [ OpenRefineService ]
 })
 export class RawDataTableComponent implements OnInit, AfterContentChecked, AfterViewChecked {
   @Input() private projectId:any;
@@ -56,8 +56,8 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   @Output() pageChangedEmitter = new EventEmitter();
   @Output() metricsChangedEmitter = new EventEmitter();
 
-  @ViewChild(ContextMenuComponent) public basicMenu: ContextMenuComponent;
-  private currentContextIndex: number = 0;
+  @ViewChild('existingMetric') public existingMenu: ContextMenuComponent;
+  @ViewChild('newMetric') public newMenu: ContextMenuComponent;
 
   private selectedMetricCells: any;
   private selectedMetrics: Metric[];
@@ -66,26 +66,26 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
 
   private updated: boolean = false;
 
-  public menuOptions = [
-    {
-      html: () => 'Add Metric',
-      click: (metric, $event) => {
-        //TODO: add metric function
-      },
-    },
-    {
-      html: (): string => 'Remove Metric',
-      click: (metric, $event): void => {
-      },
-      enabled: (metric): boolean => {
-        // check if metric exists
-        return this.metricsOverlayModel.metricColumns[this.currentContextIndex].metrics[metric] != null;
-      }
-    }
-  ];
+  // public menuOptions = [
+  //   {
+  //     html: () => 'Add Metric',
+  //     click: (metric, $event) => {
+  //       //TODO: add metric function
+  //     },
+  //   },
+  //   {
+  //     html: (): string => 'Remove Metric',
+  //     click: (metric, $event): void => {
+  //     },
+  //     enabled: (metric): boolean => {
+  //       // check if metric exists
+  //       return this.metricsOverlayModel.metricColumns[this.currentContextIndex].metrics[metric] != null;
+  //     }
+  //   }
+  // ];
 
-  constructor(private openRefineService: OpenRefineService, 
-              private contextMenuService: ContextMenuService) { }
+  constructor(private openRefineService: OpenRefineService,
+    private contextMenuService: ContextMenuService) { }
 
   ngOnInit() {
     this.pageChanged({page: this.page, itemsPerPage: this.itemsPerPage});
@@ -201,14 +201,29 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
     this.pageChangedEmitter.emit({from: this.rowsFrom, to: (this.rowsFrom + this.itemsPerPage)});
   }
 
-  private onContextMenu($event: MouseEvent, item: any, index: any): void {
-    this.currentContextIndex = index;
-    this.contextMenuService.show.next({
-      actions: this.menuOptions,
-      event: $event,
-      item: item
-    });
+  private onContextMenu($event: MouseEvent, item: any, metric: any): void {
+    let metricContext = item.metrics[metric];
+    if (metricContext) {
+      this.contextMenuService.show.next({
+        // Optional - if unspecified, all context menu components will open
+        contextMenu: this.existingMenu,
+        event: $event,
+        item: metricContext
+      });
+    } else {
+      this.contextMenuService.show.next({
+        contextMenu: this.newMenu,
+        event: $event,
+        item: metric
+      })
+    }
     $event.preventDefault();
+    $event.stopPropagation();
+    // this.contextMenuService.show.next({
+    //   actions: this.menuOptions,
+    //   event: $event,
+    //   item: item
+    // });
   }
 
   private onClickOverview($event: MouseEvent, item: any, cellIndex: any): void {
@@ -315,5 +330,9 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
     this.tableOverlay.fillCols();
     this.tableOverlay.fillScrollVis();
     this.tableOverlay.updateOverlayPositions();
+  }
+
+  deleteMetric(metric: Metric) {
+    console.log('test delete metric' + metric.name);
   }
 }

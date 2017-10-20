@@ -22,7 +22,7 @@ import { CreateProjectComponent } from './create-project/create-project.componen
 import { ProjectListPipe, NonMetricsProjectListPipe } from './project-list/project-list.pipe';
 
 import { AccordionModule, PaginationModule, } from 'ng-bootstrap'
-import { ContextMenuModule } from 'angular2-contextmenu';
+import { ContextMenuModule } from 'ngx-contextmenu';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { SidebarModule } from 'ng-sidebar';
 
