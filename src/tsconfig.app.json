@@ -13,7 +13,13 @@
     "target": "es5",
     "module": "es2015",
     "baseUrl": "",
-    "types": []
+    "types": [
+      "node"
+    ],
+    "typeRoots": [
+      // add path to @types
+      "node_modules/@types"
+    ]
   },
   "exclude": [
     "test.ts",

@@ -1,5 +1,5 @@
 declare var System: any;
-declare var require: NodeRequire;
+// declare var require: NodeRequire;
 
 declare module 'd3' {
   export * from 'd3-array';
