@@ -1,0 +1,17 @@
+<!-- <p></p> -->
+<table *ngIf="availableMetrics">
+  <thead class="thead-default">
+    <th>Name</th>
+    <th>Description</th>
+    <th>Parameters</th>
+    <th>Default Parameters</th>
+    <th>Returns</th>
+  </thead>
+  <tr *ngFor="let singleColFunction of availableMetrics.singleColumnFunctions">
+    <th></th>
+    <th>{{singleColFunction.description}}</th>
+    <th>{{singleColFunction.params}}</th>
+    <th>{{singleColFunction.defaultParams}}</th>
+    <th>{{singleColFunction.returns}}</th>
+  </tr>
+</table>

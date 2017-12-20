@@ -56,7 +56,16 @@
           <ng-container *ngIf="metricsOverlayModel.availableMetrics">
             <tr>
               <th [style.padding.px]="0"
-                [colSpan]="project.columnModel.columns.length + 1">Single-Column Metrics</th>
+                [colSpan]="project.columnModel.columns.length + 1">Single-Column Metrics
+                  <div ngbDropdown class="d-inline-block">
+                    <button class="btn btn-outline-primary btn-sm" id="dropdownBasic1" ngbDropdownToggle>Sort Columns</button>
+                    <div ngbDropdownMenu aria-labelledby="dropdownBasic1">
+                      <button class="dropdown-item btn-sm" (click)="handleSort($event, 'sortOriginal')">Original Structure</button>
+                      <button class="dropdown-item btn-sm" (click)="handleSort($event, 'sortByDirtiness')">By Dirtiness</button>
+                      <button class="dropdown-item btn-sm" (click)="handleSort($event, 'sortByName')">By Name</button>
+                    </div>
+                  </div>
+              </th>
             </tr>
             <tr>
               <th [style.padding.px]="0"></th>

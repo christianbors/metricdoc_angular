@@ -41,26 +41,30 @@
     <ngb-accordion class="checks-panel" (panelChange)="beforeChange($event)">
       <ngb-panel [disabled]="!metricSelection">
         <ng-template ngbPanelTitle>
-          <div class="panel-title pull-left">
-           Quality Checks
-           <button class="btn btn-primary btn-sm" 
-            (click)="addCheck(); $event.stopPropagation(); $event.preventDefault()"
-            [disabled]="!metricSelection">Add Check</button>
-           </div>
-          <div *ngIf="metricSelection" class="panel-title pull-right">Concatenation: 
-            <div *ngIf="metricSelection" [(ngModel)]="metricSelection[0].concat" ngbRadioGroup name="concat">
-              <label class="btn btn-secondary btn-sm"
-                [style.margin]=0
-                (click)="clickConcat($event, 'AND')">
-                <input type="radio" value="AND"> AND
-              </label>
-              <label class="btn btn-secondary btn-sm"
-                [style.margin]=0
-                (click)="clickConcat($event, 'OR')">
-                <input type="radio" value="OR"> OR
-              </label>
-            </div></div>
-          <div class="clearfix"></div>
+          <span>
+            <div class="panel-title float-left">
+              Quality Checks
+              <button class="btn btn-primary btn-sm" 
+                (click)="addCheck(); $event.stopPropagation(); $event.preventDefault()"
+                [disabled]="!metricSelection">Add Check</button>
+            </div>
+            <!-- <div *ngIf="metricSelection" class="panel-title float-right">Concatenation: -->
+              <div *ngIf="metricSelection" [(ngModel)]="metricSelection[0].concat" class="panel-title float-right" ngbRadioGroup name="concat">
+                Concatenation:
+                <label class="btn btn-secondary btn-sm"
+                  [style.margin]=0
+                  (click)="clickConcat($event, 'AND')">
+                  <input type="radio" value="AND"> AND
+                </label>
+                <label class="btn btn-secondary btn-sm"
+                  [style.margin]=0
+                  (click)="clickConcat($event, 'OR')">
+                  <input type="radio" value="OR"> OR
+                </label>
+              </div>
+            <!-- </div> -->
+          </span>
+          <!-- <div class="clearfix"></div> -->
         </ng-template>
         <ng-template *ngIf="metricSelection" id="checksList" class="list-group fixed-panel" ngbPanelContent>
           <ul class="list-group">

@@ -10,6 +10,8 @@ import { ProjectMetadata }		from './model/project-metadata';
 import { OpenRefineProject }	from './model/open-refine-project';
 import { OpenRefineService }	from './open-refine.service';
 import { RawDataTableComponent } from '../raw-data-table/raw-data-table.component'
+import { GlobalNavService } from '../../global-nav.service';
+
 import { NgbModule, NgbAccordion, NgbRadioGroup } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
@@ -72,10 +74,24 @@ export class OpenRefineComponent implements OnInit, OnChanges {
 
   private detailViewOffsetTop: number;
 
+  private sortBy: string = "original";
+
   constructor (  private route: ActivatedRoute,
     private router: Router,
-    private openRefineService: OpenRefineService
+    private openRefineService: OpenRefineService,
+    private globalNavService: GlobalNavService
   ) {
+    globalNavService.recalc$.subscribe(
+      recalc => {
+        this.openRefineService.evaluateMetrics(this.projectId)
+        .subscribe(
+          metricsOverlayModel => {
+            this.openRefineProject.overlayModels['metricsOverlayModel'] = metricsOverlayModel;
+            this.updateProjectData(this.openRefineProject);
+          },
+          error => this.errorMessage = <any>error
+        );
+      });
     // this.subscription = routineHelperService.sidebarShown$.subscribe(
     //   sidebarShown => {
     //     this.sidebarShown = sidebarShown;
@@ -93,7 +109,12 @@ export class OpenRefineComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges) {
     console.log('change in comp');
     if('metricsOverlayModel' in changes) {
-      console.log('model changed');
+      // this.openRefineService.evaluateMetrics(this.projectId)
+      //   .subscribe(
+      //     openRefineProject => updateProjectData(openRefineProject),
+      //     error => this.errorMessage = <any>error
+      //   );
+      console.log('metrics overlay model changed');
     }
   }
 
@@ -102,19 +123,7 @@ export class OpenRefineComponent implements OnInit, OnChanges {
       .subscribe(
         openRefineProject => {
           this.openRefineProject = openRefineProject;
-          this.sortMetricColumns();
-          this.openRefineService.model = this.openRefineProject.overlayModels.metricsOverlayModel;
-          let colorbrewer = require('colorbrewer');
-          let colColors = colorbrewer.Reds[this.openRefineService.model.availableSpanningMetrics.length];
-          let spanColors = colorbrewer.Oranges[this.openRefineService.model.availableMetrics.length];
-          this.columnMetricColors = {};
-          this.spanMetricColors = {};
-          for(let m in this.openRefineService.model.availableMetrics) {
-            this.columnMetricColors[this.openRefineService.model.availableMetrics[m]] = colColors[m];
-          }
-          for (let m in this.openRefineService.model.availableSpanningMetrics) {
-            this.spanMetricColors[this.openRefineService.model.availableSpanningMetrics[m]] = spanColors[m];
-          }
+          this.updateProjectData(openRefineProject);
         },
         error => this.errorMessage = <any>error
       );
@@ -127,7 +136,7 @@ export class OpenRefineComponent implements OnInit, OnChanges {
         error => this.errorMessage = <any>error);
   }
 
-  sortMetricColumns() {
+  sortMetricColumns(mode:string) {
     let currentMetricColumns = this.openRefineProject.overlayModels.metricsOverlayModel.metricColumns;
     let sortedMetricColumns = [];
     for (let col of this.openRefineProject.columnModel.columns) {
@@ -140,6 +149,41 @@ export class OpenRefineComponent implements OnInit, OnChanges {
         sortedMetricColumns.push({columnName: col.name, metrics: {}});
       }
     }
+
+    if (mode === "sortByDirtiness") {
+      sortedMetricColumns = sortedMetricColumns.sort((a: any, b: any) => {
+        let valA = Object.keys(a.metrics).map((d:any) => { return parseFloat(a.metrics[d].measure)}).reduce((pv, cv) => pv+cv, 0);;
+        let valB = Object.keys(b.metrics).map((d:any) => { return parseFloat(b.metrics[d].measure)}).reduce((pv, cv) => pv+cv, 0);;
+        // if(a.value < b.value)
+        //   return -1;
+        // if (a.value > b.value)
+        //   return 1;
+        // return 0;
+        return valB - valA;
+      });
+    } else if (mode === "sortByName") {
+      //TODO
+    }
+    let sortedColumns = [];
+    for (let metricCol of sortedMetricColumns) {
+      let col = this.openRefineProject.columnModel.columns.find((value, idx, col) => {
+        return metricCol.columnName === value.name;
+        // if (typeof colName != "string" && this.columnSelection[0].length > 1) {
+        //   colName = this.columnSelection[0][0];
+        // }
+        // return value.name == colName;
+      });
+      if (col) 
+        sortedColumns.push(col);
+    }
+    for (let col of this.openRefineProject.columnModel.columns) {
+      let modelCol = sortedColumns.find((value, idx) => {
+        return col.name === value.name;
+      });
+      if(!modelCol)
+        sortedColumns.push(modelCol);
+    }
+    this.openRefineProject.columnModel.columns = sortedColumns;
     this.openRefineProject.overlayModels.metricsOverlayModel.metricColumns = sortedMetricColumns;
   }
 
@@ -183,11 +227,33 @@ export class OpenRefineComponent implements OnInit, OnChanges {
     this.rowsTo = pages.to;
   }
 
+  handleSort(sortBy: string) {
+    this.sortBy = sortBy;
+    this.updateProjectData(this.openRefineProject);
+  }
+
   toggleMove() {
     this.state = (this.state === 'inactive' ? 'active' : 'inactive');
     this.expanded = (this.state === 'inactive' ? false : true);
   }
   //TODO: add edit commands with @Output functions
+
+  private updateProjectData(openRefineProject: OpenRefineProject) {
+    this.sortMetricColumns(this.sortBy);
+    this.openRefineService.model = this.openRefineProject.overlayModels.metricsOverlayModel;
+    let colorbrewer = require('colorbrewer');
+    let colColors = colorbrewer.Reds[this.openRefineService.model.availableSpanningMetrics.length];
+    let spanColors = colorbrewer.Oranges[this.openRefineService.model.availableMetrics.length];
+    this.columnMetricColors = {};
+    this.spanMetricColors = {};
+    for(let m in this.openRefineService.model.availableMetrics) {
+      this.columnMetricColors[this.openRefineService.model.availableMetrics[m]] = colColors[m];
+    }
+    for (let m in this.openRefineService.model.availableSpanningMetrics) {
+      this.spanMetricColors[this.openRefineService.model.availableSpanningMetrics[m]] = spanColors[m];
+    }
+    this.rawDataTable.updateTableOverlay();
+  }
 
   // getRows() {
   //   this.openRefineService.getRows(0, 50)

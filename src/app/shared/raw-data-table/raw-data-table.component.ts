@@ -1,6 +1,7 @@
 import { Component, Directive, Injectable, HostListener, 
   OnInit, AfterContentChecked, AfterViewChecked,
-  Input, ViewChild, Output, EventEmitter } from '@angular/core';
+  Input, ViewChild, Output, EventEmitter, 
+  OnChanges, SimpleChanges } from '@angular/core';
 
 import { OpenRefineService } from '../open-refine/open-refine.service';
 
@@ -23,7 +24,7 @@ import * as d3Selection from 'd3-selection';
   styleUrls: ['./raw-data-table.component.scss'],
   providers: [ OpenRefineService ]
 })
-export class RawDataTableComponent implements OnInit, AfterContentChecked, AfterViewChecked {
+export class RawDataTableComponent implements OnInit, AfterContentChecked, AfterViewChecked, OnChanges {
   @Input() private projectId:any;
   @Input() private project:OpenRefineProject;
   @Input() private metricsOverlayModel:MetricsOverlayModel;
@@ -54,7 +55,7 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   @Output() onOverviewMetricSelected = new EventEmitter();
   @Output() tableHeightChanged = new EventEmitter();
   @Output() pageChangedEmitter = new EventEmitter();
-  @Output() metricsChangedEmitter = new EventEmitter();
+  @Output() sortEmitter = new EventEmitter();
 
   @ViewChild('existingMetric') public existingMenu: ContextMenuComponent;
   @ViewChild('newMetric') public newMenu: ContextMenuComponent;
@@ -65,24 +66,6 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   private highlightedRows: number[];
 
   private updated: boolean = false;
-
-  // public menuOptions = [
-  //   {
-  //     html: () => 'Add Metric',
-  //     click: (metric, $event) => {
-  //       //TODO: add metric function
-  //     },
-  //   },
-  //   {
-  //     html: (): string => 'Remove Metric',
-  //     click: (metric, $event): void => {
-  //     },
-  //     enabled: (metric): boolean => {
-  //       // check if metric exists
-  //       return this.metricsOverlayModel.metricColumns[this.currentContextIndex].metrics[metric] != null;
-  //     }
-  //   }
-  // ];
 
   constructor(private openRefineService: OpenRefineService,
     private contextMenuService: ContextMenuService) { }
@@ -187,6 +170,10 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
         d3.select(this).select('svg')
           .style('width', data);
       });
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    console.log(changes);
   }
 
   pageChanged(event:any):void {
@@ -324,6 +311,10 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
 
   public handleSelectionUpdated($event: any) {
     console.log("selection updated... do something?");
+  }
+
+  public handleSort($event: MouseEvent, sortBy: string) {
+    this.sortEmitter.emit({sortBy: sortBy});
   }
 
   public updateTableOverlay() {

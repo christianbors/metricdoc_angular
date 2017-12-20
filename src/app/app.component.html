@@ -5,18 +5,18 @@
   </button>
   <div class="collapse navbar-collapse" id="metricdocDropdown">
     <ul class="navbar-nav mr-auto">
-      <li class="nav-item"
+      <!-- <li class="nav-item"
         [class.disabled]="!projectActive">
-        <a class="nav-link" href="" id="addMetric" data-toggle="modal" data-target="#addMetricModal">Back To Project...</a>
-      </li>
-      <li class="nav-item dropdown">
+        <a class="nav-link" href="" id="addMetric" data-toggle="modal" data-target="#addMetricModal">Back To Project Overview</a>
+      </li> -->
+      <li class="nav-item dropdown" *ngIf="projectId">
         <a class="nav-link nav-item dropdown-toggle" href="" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Current Project <span class="caret"></span></a>
         <ul class="dropdown-menu">
-          <li><a class="nav-link nav-item" href="" id="addMetric">Add Metric</a></li>
-          <li><a class="nav-link nav-item" href="" id="exportMetrics">Recalculate All ...</a></li>
+          <li><a class="nav-link nav-item" id="addMetric">Add Metric</a></li>
+          <li><a class="nav-link nav-item" id="exportMetrics" (click)="onRecalculate()">Recalculate All ...</a></li>
         </ul>
       </li>
-     <li class="nav-item dropdown">
+     <li class="nav-item dropdown" *ngIf="projectId">
         <a class="nav-link nav-item dropdown-toggle" href="" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Metrics Library<span class="caret"></span></a>
         <ul class="dropdown-menu">
           <li class="dropdown-header">Import</li>
@@ -28,9 +28,9 @@
           <li><a class="nav-link nav-item" href="" id="exportMetrics">Export Quality Metrics</a></li>
         </ul>
       </li>
-      <li>
+      <!-- <li>
         <a class="nav-link" href="#" id="showExamples" data-toggle="modal" data-target="#examplesModal">Metric and Check Info</a>
-      </li>
+      </li> -->
     </ul>
   </div>
 
@@ -52,7 +52,7 @@
         </li>
         <li class="nav-item">
           <a class="nav-link" href="/metric-browser"
-            [class.active]="navbarPos.includes('/metric-browser')">Metric Browser</a>
+            [class.active]="navbarPos.includes('/metric-browser')">Browse Available Metrics</a>
         </li>
       </ul>
     </nav>

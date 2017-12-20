@@ -25,6 +25,8 @@ import { AccordionModule, PaginationModule, } from 'ng-bootstrap'
 import { ContextMenuModule } from 'ngx-contextmenu';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { SidebarModule } from 'ng-sidebar';
+import { MetricBrowserComponent } from './metric-browser/metric-browser.component';
+import { MetricPreviewComponent } from './test/metric-preview/metric-preview.component';
 
 const appRoutes: Routes = [
   {
@@ -53,6 +55,11 @@ const appRoutes: Routes = [
     data: { title: 'Create New MetricDoc Project'}
   },
   {
+    path: 'metric-browser',
+    component: MetricBrowserComponent,
+    data: { title: 'Browse Available Metrics'}
+  },
+  {
     path: 'metric-project/:projectId',
     component: OpenRefineComponent
   },
@@ -74,7 +81,7 @@ const appRoutes: Routes = [
     CheckInputDirectiveDirective,
     ProjectListComponent,
     CreateProjectComponent,
-    ProjectListPipe, NonMetricsProjectListPipe
+    ProjectListPipe, NonMetricsProjectListPipe, MetricBrowserComponent, MetricPreviewComponent
   ],
   imports: [
     RouterModule.forRoot(appRoutes, { enableTracing: true }),

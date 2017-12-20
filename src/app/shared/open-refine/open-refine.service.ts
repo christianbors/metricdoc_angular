@@ -1,4 +1,4 @@
-import { Injectable }								from '@angular/core';
+import { Injectable } from '@angular/core';
 import { Http, Response, Jsonp, URLSearchParams }	from '@angular/http';
 
 import { Observable } from 'rxjs/Rx';
@@ -8,6 +8,7 @@ import 'rxjs/add/operator/map';
 
 import { MetricsOverlayModel } from './model/metrics-overlay-model';
 import { OpenRefineProject } from './model/open-refine-project';
+import { MetricFunction } from './model/metric-function';
 
 // import { Component, OnInit } from '@angular/core';
 
@@ -42,10 +43,20 @@ export class OpenRefineService {
     return body || { };
   }
 
-  setupProject(projectId: any) : Observable<MetricsOverlayModel> {
+  setupProject(projectId: any, metricFunctions: any) : Observable<MetricsOverlayModel> {
     let params = this.initializeParams(projectId);
     params.set('computeDuplicates', 'false');
-    return this.http.post(this.openRefineServerUrl + 'metric-doc/metricsOverlayModel', { search: params })
+    if (metricFunctions)
+      params.set('metricsConfigList', JSON.stringify(metricFunctions));
+
+    return this.http.post(this.openRefineServerUrl + 'metric-doc/createMetricsExtension', params)
+      .map(this.extractData)
+      .catch(this.handleError);
+  }
+
+  recommendMetrics(projectId: any) : Observable<MetricFunction[]> {
+    let params = this.initializeParams(projectId);
+    return this.http.get(this.openRefineServerUrl + 'metric-doc/recommend-metrics', { search: params })
       .map(this.extractData)
       .catch(this.handleError);
   }
@@ -97,7 +108,7 @@ export class OpenRefineService {
       .catch(this.handleError);
   }
 
-  evaluateMetrics (projectId: string) {
+  evaluateMetrics (projectId: string) :Observable<MetricsOverlayModel> {
     return this.http.post(this.openRefineServerUrl + 'metric-doc/evaluateMetrics', this.initializeParams(projectId))
       .map(this.extractData)
       .catch(this.handleError);
@@ -129,6 +140,12 @@ export class OpenRefineService {
     params.set('expression', 'grel:'+ expression);
     params.set('cellIndex', cellIdx);
     return this.http.post(this.openRefineServerUrl + 'core/preview-expression', params)
+      .map(this.extractData)
+      .catch(this.handleError);
+  }
+
+  getMetricDocFunctionsOverview () {
+    return this.http.get(this.openRefineServerUrl + 'metric-doc/get-metricdoc-language-info')
       .map(this.extractData)
       .catch(this.handleError);
   }

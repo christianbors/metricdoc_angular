@@ -289,7 +289,7 @@ export class MetricDetailVisualizationComponent implements OnInit, OnChanges {
 
       // position overlay
       container.selectAll('rect.pos-overlay').remove();
-      container.append('rect')
+      container.insert('rect', 'g')
         .attr('class', 'pos-overlay')
         .attr('x', this.x(0))
         .attr('y', this.detailViewY(this.rowsFrom))
@@ -301,7 +301,7 @@ export class MetricDetailVisualizationComponent implements OnInit, OnChanges {
           return this.x(this.metricSelection.length) - this.x(0);
         })
         .attr('fill', 'lightgrey')
-        .attr('opacity', 0.75);
+        .attr('opacity', 0.7);
     }
   }
 

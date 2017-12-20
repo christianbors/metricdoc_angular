@@ -1,5 +1,14 @@
 @import "../globals";
 
+div.raw-data-table-footer {
+    /*border: 1px solid black;*/
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    position: relative;
+}
+
 div.raw-data-container {
     overflow-x: scroll;
     position: relative;

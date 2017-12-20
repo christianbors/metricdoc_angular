@@ -10,11 +10,52 @@
     Number of Rows: {{rowModel.total}}
   </p>
   <p>
-    <button type="button" class="btn btn-secondary">Go To OpenRefine Project</button>
+    <button type="button" class="btn btn-secondary" 
+      (click)="goToRefineProject()">
+        Go To OpenRefine Project
+    </button>
     <button type="button" class="btn btn-primary"
       [disabled]="importSuccess"
-      (click)="addMetricsOverlay()">Convert to Metrics Project</button>
+      (click)="addMetricsOverlay()">
+        Convert to Metrics Project
+    </button>
   </p>
+  <p>
+    <ngb-alert *ngIf="errorMessage" [dismissible]="true">
+      <strong>Error:</strong> {{errorMessage}}
+    </ngb-alert>
+  </p>
+  </ng-container>
+  <ng-container *ngIf="metricFunctions">
+    <h3>Recommended Metrics</h3>
+    <div class="list-group" style="margin-bottom: 12px" *ngFor="let functionsColumn of metricFunctions.columns; let colIndex = index; trackBy: columnFn">
+      <li class="list-group-item justify-content-between list-group-item-secondary">
+        Column: {{functionsColumn.column}}
+      </li>
+      <!-- [routerLink]="['/metric-project', proj.key]"
+        routerLinkActive="active" -->
+      <li class="list-group-item list-group-item-action flex-column" 
+        *ngFor="let metricRecommendation of functionsColumn.metrics; let metricIndex = index; trackBy: metricFn"
+        [class.disabled]="metricsDisabled[colIndex][metricIndex]"
+        (click)="toggleMetric($event, colIndex, metricIndex)">
+        <div class="d-flex w-100 justify-content-between">
+          <div class="float-left">
+            <span class="fa fa-bar-chart"></span>
+            Metric - {{metricRecommendation.name}}
+          </div>
+          <div class="float-right">{{metricRecommendation.name}}( 
+            <input type="text" 
+              [value]="metricRecommendation.parameters" 
+              (click)="$event.stopPropagation()"
+              (keyup)="onTextKey($event, colIndex, metricIndex)"> )
+          </div>
+        </div>
+        <div class="d-flex w-100 justify-content-between">
+          <small [style.marginRight.px]="100">Description: {{metricRecommendation.metric.description}}</small>
+          <small class="float-right">Default Parameters: {{metricRecommendation.metric.params}}</small>
+        </div>
+      </li>
+    </div>
   </ng-container>
 </ng-container>
 <ng-container *ngIf="!projectId">
@@ -24,7 +65,7 @@
   </li>
   <!-- (click)="openProject(rowIndex)"> -->
   <li class="list-group-item list-group-item-action flex-column disabled" *ngFor="let proj of (refineProjects | nonMetricProjects); let rowIndex = index; trackBy: rowFn"
-    [routerLink]="['/new-project', proj.key]"
+    [routerLink]="['/create-project', proj.key]"
     routerLinkActive="active">
     <div class="d-flex w-100 justify-content-between">
       <div class="float-left">

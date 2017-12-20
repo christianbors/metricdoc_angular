@@ -3,6 +3,7 @@
     <metric-accordion
       [metricSelection]="selectedMetrics"
       [columnSelection]="selectedColumns"
+      [projectId]="projectId"
       [project]="openRefineProject"
       (onSelectionUpdated)="handleSelectionUpdated($event)"></metric-accordion>
   </div>
@@ -15,6 +16,7 @@
         [columnMetricColors]="columnMetricColors"
         [spanMetricColors]="spanMetricColors"
         (onOverviewMetricSelected)="handleOverviewSelection($event)"
+        (sortEmitter)="handleSort($event)"
         (tableHeightChanged)="handleTableHeightUpdated($event)"
         (pageChangedEmitter)="handleDataRowsPageChanged($event)">
       </app-raw-data-table>
