@@ -66,8 +66,9 @@ export class SpanQualityHeaderColComponent implements OnChanges {
           .attr("height", 26)
           .attr("width", this.metric.measure * cellWidth)
           .style("fill", (d, i, siblings) => {
-            // let metric = siblings[i].parentNode.__data__;
-            return this.spanMetricColors[this.metric.name];
+            if(this.spanMetricColors[this.metric.name])
+              return this.spanMetricColors[this.metric.name];
+            return "#ce6dbd";
           });
       }
     }

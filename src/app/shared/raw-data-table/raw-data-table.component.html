@@ -1,13 +1,13 @@
 <div *ngIf="project">
   <table class='table spanning-metrics-overview'>
     <thead #spanOverviewHead class='thead-default'>
-      <ng-container *ngIf="metricsOverlayModel">
-        <ng-container *ngIf="metricsOverlayModel.spanningMetrics">
+      <ng-container *ngIf="project.overlayModels.metricsOverlayModel">
+        <ng-container *ngIf="project.overlayModels.metricsOverlayModel.spanningMetrics">
           <tr>
             <th [style.padding.px]="0"
               [colSpan]="project.columnModel.columns.length + 1">Multiple-Column Metrics</th>
           </tr>
-          <ng-container *ngFor="let metric of metricsOverlayModel.spanningMetrics">
+          <ng-container *ngFor="let metric of project.overlayModels.metricsOverlayModel.spanningMetrics">
             <tr>
               <th [style.padding.px]="0"></th>
               <th *ngFor="let col of metric.spanningColumns"
@@ -24,7 +24,7 @@
                 [colSpan]="metric.spanningColumns.length"
                 [colWidths]="colWidths"
                 [metric]="metric"
-                [metricsOverlayModel]="metricsOverlayModel"
+                [metricsOverlayModel]="project.overlayModels.metricsOverlayModel"
                 [spanMetricColors]="spanMetricColors"
                 [tooltip]="tooltip"
                 [style.padding.px]="0"
@@ -42,7 +42,7 @@
       [class.disabled]="disabled"
       [style.top.px]="overlayOffsetTop"
       [style.width.px]="overlayWidth"
-      [metricsOverlayModel]="metricsOverlayModel"
+      [metricsOverlayModel]="project.overlayModels.metricsOverlayModel"
       [colWidths]="colWidths"
       [bodyHeight]="bodyHeight"
       [rowsFrom]="rowsFrom"
@@ -52,8 +52,8 @@
       (click)="onClickRect($event)"></svg>
     <table class='table metrics-overview'>
       <thead #colOverviewHead class='thead-default'>
-        <ng-container *ngIf="metricsOverlayModel">
-          <ng-container *ngIf="metricsOverlayModel.availableMetrics">
+        <ng-container *ngIf="project.overlayModels.metricsOverlayModel">
+          <ng-container *ngIf="project.overlayModels.metricsOverlayModel.availableMetrics">
             <tr>
               <th [style.padding.px]="0"
                 [colSpan]="project.columnModel.columns.length + 1">Single-Column Metrics
@@ -62,7 +62,7 @@
                     <div ngbDropdownMenu aria-labelledby="dropdownBasic1">
                       <button class="dropdown-item btn-sm" (click)="handleSort($event, 'sortOriginal')">Original Structure</button>
                       <button class="dropdown-item btn-sm" (click)="handleSort($event, 'sortByDirtiness')">By Dirtiness</button>
-                      <button class="dropdown-item btn-sm" (click)="handleSort($event, 'sortByName')">By Name</button>
+                      <!-- <button class="dropdown-item btn-sm" (click)="handleSort($event, 'sortByName')">By Name</button> -->
                     </div>
                   </div>
               </th>
@@ -74,26 +74,26 @@
                 [style.paddingRight.px]="6"
                 [style.width.px]="colWidths[i+1]">{{column.name}}</th>
             </tr>
-            <tr class='overview-row' *ngFor="let metric of metricsOverlayModel.availableMetrics; let rowIndex = index; trackBy: rowFn">
+            <tr class='overview-row' *ngFor="let metric of project.overlayModels.metricsOverlayModel.availableMetrics; let rowIndex = index; trackBy: rowFn">
               <th [style.padding.px]="0"
                 [style.paddingBottom.px]="6"
                 [style.paddingLeft.px]="8"
                 [style.paddingRight.px]="4">{{metric}}
               </th>
-                <ng-container *ngFor="let metricColumn of metricsOverlayModel.metricColumns; let cellIndex = index; trackBy: trackByFn">
+                <ng-container *ngFor="let metricColumn of project.overlayModels.metricsOverlayModel.metricColumns; let cellIndex = index; trackBy: trackByFn">
                   <th class="metric-overview-col"
                     *ngIf="metricColumn" 
                     metric-col 
                     [ngClass]="checkValues(metric, cellIndex)" 
                     [metricCol]="metricColumn" 
                     [metric]="metric"
-                    [metricsOverlayModel]="metricsOverlayModel"
+                    [metricsOverlayModel]="project.overlayModels.metricsOverlayModel"
                     [columnMetricColors]="columnMetricColors"
                     [svgWidth]="colWidths[cellIndex+1]"
                     [tooltip]="tooltip"
                     [style.padding.px]="0"
                     [style.paddingTop.px]="6"
-                    (contextmenu)="onContextMenu($event, metricColumn, metricsOverlayModel.availableMetrics[rowIndex])"
+                    (contextmenu)="onContextMenu($event, metricColumn, project.overlayModels.metricsOverlayModel.availableMetrics[rowIndex])"
                     (click)="onClickOverview($event, metric, cellIndex)"></th>
                     <!-- [style.width.px]="colWidths[cellIndex+1]" -->
                     <!-- (contextmenu)="onContextMenu($event, metric, cellIndex)" -->

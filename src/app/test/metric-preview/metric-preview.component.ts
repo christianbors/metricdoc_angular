@@ -25,19 +25,6 @@ export class MetricPreviewComponent implements OnInit, OnChanges {
   }
 
   ngOnInit() {
-    if (this.metricsOverlayModel) {
-      let colorbrewer = require('colorbrewer');
-      let colColors = colorbrewer.Reds[this.metricsOverlayModel.availableMetrics];
-      let spanColors = colorbrewer.Oranges[this.metricsOverlayModel.availableMetrics];
-      this.columnMetricColors = {};
-      this.spanMetricColors = {};
-      for(let m in this.openRefineService.model.availableMetrics) {
-        this.columnMetricColors[this.openRefineService.model.availableMetrics[m]] = colColors[m];
-      }
-      for (let m in this.openRefineService.model.availableSpanningMetrics) {
-        this.spanMetricColors[this.openRefineService.model.availableSpanningMetrics[m]] = spanColors[m];
-      }
-    }
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -49,6 +36,18 @@ export class MetricPreviewComponent implements OnInit, OnChanges {
           let svg = d3.select(this.htmlElement).select("svg");
           if(this.metricsOverlayModel) {
             
+            let colorbrewer = require('colorbrewer');
+            let colColors = colorbrewer.Reds[this.metricsOverlayModel.availableMetrics.length];
+            let spanColors = colorbrewer.Oranges[this.metricsOverlayModel.availableMetrics.length];
+            this.columnMetricColors = {};
+            this.spanMetricColors = {};
+            for(let m in this.metricsOverlayModel.availableMetrics) {
+              this.columnMetricColors[this.metricsOverlayModel.availableMetrics[m]] = colColors[m];
+            }
+            for (let m in this.metricsOverlayModel.availableSpanningMetrics) {
+              this.spanMetricColors[this.metricsOverlayModel.availableSpanningMetrics[m]] = spanColors[m];
+            }
+
             let stack = d3.stack().keys(this.metricsOverlayModel.availableMetrics) //.concat(this.metricsOverlayModel.availableSpanningMetrics)
               .order(d3.stackOrderNone)
               .offset(d3.stackOffsetNone)
@@ -68,42 +67,62 @@ export class MetricPreviewComponent implements OnInit, OnChanges {
             
             let colorrange = ["#B30000", "#E34A33", "#FC8D59", "#FDBB84", "#FDD49E", "#FEF0D9"];
 
-            let area = d3.area()
-              // .interpolate("cardinal")
-              .x(function(d:any) {
-                // console.log(bandScale(d.data.columnName));
-                return bandScale(d.data.columnName); 
-              })
-              .y0(function(d:any) {
-                // console.log(y(d["0"]));
-                return y(d["0"]); 
-              })
-              .y1(function(d:any) {
-                // console.log(y(d["1"]));
-                return y(d["1"]); 
-              });
+            // let area = d3.area()
+            //   .x(function(d:any) {
+            //     console.log(bandScale(d.data.columnName));
+            //     return bandScale(d.data.columnName); 
+            //   })
+            //   .y0(function(d:any) {
+            //     // console.log(y(d[0]));
+            //     return y(d[1]); 
+            //   })
+            //   .y1(function(d:any) {
+            //     // console.log(y(d[1]));
+            //     return y(d[0]); 
+            //   });
 
             svg.selectAll("g.metric")
               .data(metrics)
               .enter().append("g")
-              .attr("class", "metric")
-              .selectAll("rect")
-              .data((d) => { return d; })
+                .attr("class", "metric")
+              .selectAll("area")
+              .data((d:any) => {
+                return d.map((obj:any, idx: any, data:any) => {
+                  return {
+                    0: obj[0],
+                    1: obj[1],
+                    columnName: obj.data.columnName,
+                    metric: obj.data.metrics[data.key]
+                  }
+                });
+              })
               .enter()
               .append("rect")
-                .attr("x", (d:any) => { 
-                  return bandScale(d.data.columnName);
+                .attr("x", (d:any, i:number, any:any) => {
+                  // console.log(bandScale(d.columnName));
+                  return bandScale(d.columnName);
                 })
                 .attr("y", (d:any) => { return y(d[1]) })
                 .attr("height", (d:any) => {
-                  if(d[1] > 0)
-                    console.log(d[1]);
+                  // if(d[1] > 0)
+                  //   console.log(d[1]);
                   return y(d[0]) - y(d[1]);
                 })
-                .attr("width", bandScale.bandwidth());
-              // .attr("d", function(d:any, i:number) {
-              //   return area(d);
-              // });
+                .attr("width", bandScale.bandwidth())
+                .attr("fill", (d:any) => {
+                  if(d && d.metric) {
+                    if(this.columnMetricColors[d.metric.name])
+                      return this.columnMetricColors[d.metric.name];
+                    if(this.spanMetricColors[d.metric.name])
+                      return this.spanMetricColors[d.metric.name];
+                  }
+                  return 0;
+                });
+              // .append("path")
+              //   .data(metrics)
+              //   .attr("class", "area")
+              //   .attr("d", area);
+
           }
         },
         error => {

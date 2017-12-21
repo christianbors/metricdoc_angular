@@ -183,15 +183,15 @@ export class RawDataScrollBarVisualizationComponent implements OnInit, OnChanges
       }
     });
 
-    this.overlay.attr('transform', (d, i, elements) => { 
-        if(this.colWidths.length > 0) {
-            let width = 0;
-            for (let colIt = 0; colIt <= i+1; colIt++) {
-              width += this.colWidths[colIt];
-            }
-            return 'translate(' + (width - 4) + ',0)'; 
-        }
-      });
+    this.overlay.attr('transform', (d, i, elements) => {
+      if(this.colWidths.length > 0) {
+          let width = 0;
+          for (let colIt = 0; colIt <= i+1; colIt++) {
+            width += this.colWidths[colIt];
+          }
+          return 'translate(' + (width - 4) + ',0)'; 
+      }
+    });
 
     this.columns.selectAll('rect')
       .attr('height', this.bodyHeight);
@@ -306,10 +306,13 @@ export class RawDataScrollBarVisualizationComponent implements OnInit, OnChanges
   }
   
   fillRect(metric: any): string {
-    if(metric.spanningColumns) {
-      return this.spanMetricColors[metric.name];
+    if (metric.spanningColumns) {
+      if (this.spanMetricColors[metric.name])
+        return this.spanMetricColors[metric.name];
     } else {
-      return this.columnMetricColors[metric.name];
+      if (this.columnMetricColors[metric.name])
+        return this.columnMetricColors[metric.name];
     }
+    return "#ce6dbd";
   }
 }

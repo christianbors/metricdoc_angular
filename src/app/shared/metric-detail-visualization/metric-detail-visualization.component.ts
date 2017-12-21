@@ -306,10 +306,13 @@ export class MetricDetailVisualizationComponent implements OnInit, OnChanges {
   }
 
   private getColor(metric: any): string {
-    if(metric.spanningColumns) {
-      return this.spanMetricColors[metric.name];
+    if (metric.spanningColumns) {
+      if (this.spanMetricColors[metric.name])
+        return this.spanMetricColors[metric.name];
     } else {
-      return this.columnMetricColors[metric.name];
+      if (this.columnMetricColors[metric.name])
+        return this.columnMetricColors[metric.name];
     }
+    return "#ce6dbd";
   }
 }

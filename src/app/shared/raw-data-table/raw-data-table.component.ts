@@ -1,7 +1,6 @@
 import { Component, Directive, Injectable, HostListener, 
   OnInit, AfterContentChecked, AfterViewChecked,
-  Input, ViewChild, Output, EventEmitter, 
-  OnChanges, SimpleChanges } from '@angular/core';
+  Input, ViewChild, Output, EventEmitter } from '@angular/core';
 
 import { OpenRefineService } from '../open-refine/open-refine.service';
 
@@ -15,7 +14,6 @@ import { ContextMenuComponent, ContextMenuService } from 'ngx-contextmenu';
 
 import * as d3 from 'd3';
 import * as d3Tip from 'd3-tip';
-import * as d3Selection from 'd3-selection';
 
 @Injectable()
 @Component({
@@ -24,12 +22,14 @@ import * as d3Selection from 'd3-selection';
   styleUrls: ['./raw-data-table.component.scss'],
   providers: [ OpenRefineService ]
 })
-export class RawDataTableComponent implements OnInit, AfterContentChecked, AfterViewChecked, OnChanges {
+export class RawDataTableComponent implements OnInit, AfterContentChecked, AfterViewChecked {
   @Input() private projectId:any;
   @Input() private project:OpenRefineProject;
-  @Input() private metricsOverlayModel:MetricsOverlayModel;
   @Input() private columnMetricColors;
   @Input() private spanMetricColors;
+  // private metricsOverlayModel:MetricsOverlayModel;
+
+  private colWidths: number[] = [];
   private rowModel:any[];
   private maxSize:number = 5;
   private page:number = 1;
@@ -51,7 +51,6 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   private bodyHeight: number = 0;
   private colOffset: number[] = [];
 
-  @Input() private colWidths: number[] = [];
   @Output() onOverviewMetricSelected = new EventEmitter();
   @Output() tableHeightChanged = new EventEmitter();
   @Output() pageChangedEmitter = new EventEmitter();
@@ -66,12 +65,17 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   private highlightedRows: number[];
 
   private updated: boolean = false;
+  private changeDetected: boolean = false;
+  private oldColumns: any[];
 
   constructor(private openRefineService: OpenRefineService,
     private contextMenuService: ContextMenuService) { }
 
   ngOnInit() {
-    this.pageChanged({page: this.page, itemsPerPage: this.itemsPerPage});
+    this.pageChanged({ 
+      page: this.page, 
+      itemsPerPage: this.itemsPerPage 
+    });
 
     var tip = require('d3-tip');
     this.tooltip = tip().attr('class', 'd3-tip')
@@ -83,78 +87,7 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
 
   ngAfterContentChecked() {
     // the header widhts are added to the column widths only after initializing offsets
-    if (this.headerCols && this.colOffset.length > 0) {
-      for (let i = 1; i < this.headerCols.nativeElement.children.length; ++i) {
-        if (this.colWidths[i] < this.headerCols.nativeElement.children[i].offsetWidth) {
-          this.colWidths[i] = this.headerCols.nativeElement.children[i].offsetWidth;
-        }
-      }
-    }
-    if (this.headerCols && this.bodyCols && this.colOffset.length == 0) {
-      this.colWidths = [];
-      
-      // push first empty column width
-      this.colWidths.push(this.headerCols.nativeElement.children[0].offsetWidth);
-
-      for (let i = 1; i < this.bodyCols.nativeElement.children.length; ++i) {
-        this.colWidths.push(this.bodyCols.nativeElement.children[i].offsetWidth);
-      }
-
-      this.colOffset = [];
-      this.colOffset.push(0);
-      for (let metricColumn of this.metricsOverlayModel.metricColumns) {
-        let offsetWidth = 4;
-        for (let key in metricColumn.metrics) {
-          if (metricColumn.metrics[key].dirtyIndices) {
-            offsetWidth += 12;
-          }
-        }
-        this.colOffset.push(offsetWidth);
-      }
-      if (this.metricsOverlayModel.spanningMetrics) {
-        for (let spanMetric of this.metricsOverlayModel.spanningMetrics) {
-          for (let columnName of spanMetric.spanningColumns) {
-            for (let i = 0; i < this.metricsOverlayModel.metricColumns.length; i++) {
-              if (this.metricsOverlayModel.metricColumns[i].columnName === columnName)
-                this.colOffset[i+1] += 12;
-            }
-          }
-        }
-      }
-      for (let i = 0; i < this.colWidths.length; ++i) {
-        this.colWidths[i] += this.colOffset[i];
-      }
-      
-      d3.selectAll('table.metrics-overview thead tr.overview-row th')
-        .data(this.colWidths)
-        .each(function(data, index) {
-          d3.select(this).select('svg')
-            .style('paddingTop', 0)
-            .style('paddingBottom', 0)
-            .style('paddingRight', 0)
-            .style('paddingLeft', 6);
-        });
-      d3.selectAll('table.metrics-overview thead tr.column-names *')
-        .data(this.colWidths)
-        .each(function(data, index) {
-          d3.select(this)
-            .style('paddingTop', 0)
-            .style('paddingBottom', 0)
-            .style('paddingRight', 0)
-            .style('paddingLeft', 6);
-      });
-
-    }
-
-    if (this.colHead && this.dataBody) {
-      let colBox = this.colHead.nativeElement.getBoundingClientRect();
-      this.overlayOffsetTop = colBox.height;
-      this.overlayWidth = colBox.width;
-      this.bodyHeight = this.dataBody.nativeElement.getBoundingClientRect().height;
-    }
-    if (this.tableOverlay) {
-      this.tableOverlay.updateOverlayPositions();
-    }
+    this.calculateColWidths();
   }
 
   ngAfterViewChecked() {
@@ -172,8 +105,16 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
       });
   }
 
-  ngOnChanges(changes: SimpleChanges) {
-    console.log(changes);
+  ngDoCheck() {
+    if(this.project) {
+      if (this.project.columnModel.columns !== this.oldColumns) {
+        this.changeDetected = true;
+        this.colOffset = [];
+        this.oldColumns = this.project.columnModel.columns;
+      }
+
+      this.changeDetected = false;
+    }
   }
 
   pageChanged(event:any):void {
@@ -234,8 +175,8 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
       this.selectedMetrics.push(item);
       this.selectedColumns.push(item.spanningColumns);
     } else {
-      this.selectedMetrics.push(this.metricsOverlayModel.metricColumns[cellIndex].metrics[item]);
-      this.selectedColumns.push(this.metricsOverlayModel.metricColumns[cellIndex].columnName);
+      this.selectedMetrics.push(this.project.overlayModels.metricsOverlayModel.metricColumns[cellIndex].metrics[item]);
+      this.selectedColumns.push(this.project.overlayModels.metricsOverlayModel.metricColumns[cellIndex].columnName);
     }
     this.onOverviewMetricSelected.emit({metrics: this.selectedMetrics, columns: this.selectedColumns});
     this.tableHeightChanged.emit(this.colHead.nativeElement.getBoundingClientRect().height + this.spanHead.nativeElement.getBoundingClientRect().height);
@@ -314,16 +255,91 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   }
 
   public handleSort($event: MouseEvent, sortBy: string) {
-    this.sortEmitter.emit({sortBy: sortBy});
+    this.sortEmitter.emit(sortBy);
   }
 
-  public updateTableOverlay() {
-    this.tableOverlay.fillCols();
-    this.tableOverlay.fillScrollVis();
-    this.tableOverlay.updateOverlayPositions();
-  }
+  // public updateTableOverlay() {
+  //   this.tableOverlay.fillCols();
+  //   this.tableOverlay.fillScrollVis();
+  //   this.tableOverlay.updateOverlayPositions();
+  // }
 
   deleteMetric(metric: Metric) {
     console.log('test delete metric' + metric.name);
+  }
+
+  private calculateColWidths() {
+    if (this.headerCols && this.colOffset.length > 0) {
+      for (let i = 1; i < this.headerCols.nativeElement.children.length; ++i) {
+        if (this.colWidths[i] < this.headerCols.nativeElement.children[i].offsetWidth) {
+          this.colWidths[i] = this.headerCols.nativeElement.children[i].offsetWidth;
+        }
+      }
+    }
+    if (this.headerCols && this.bodyCols && this.colOffset.length == 0) {
+      this.colWidths = [];
+      
+      // push first empty column width
+      this.colWidths.push(this.headerCols.nativeElement.children[0].offsetWidth);
+
+      for (let i = 1; i < this.bodyCols.nativeElement.children.length; ++i) {
+        this.colWidths.push(this.bodyCols.nativeElement.children[i].offsetWidth);
+      }
+
+      this.colOffset = [];
+      this.colOffset.push(0);
+      for (let metricColumn of this.project.overlayModels.metricsOverlayModel.metricColumns) {
+        let offsetWidth = 4;
+        for (let key in metricColumn.metrics) {
+          if (metricColumn.metrics[key].dirtyIndices) {
+            offsetWidth += 12;
+          }
+        }
+        this.colOffset.push(offsetWidth);
+      }
+      if (this.project.overlayModels.metricsOverlayModel.spanningMetrics) {
+        for (let spanMetric of this.project.overlayModels.metricsOverlayModel.spanningMetrics) {
+          for (let columnName of spanMetric.spanningColumns) {
+            for (let i = 0; i < this.project.overlayModels.metricsOverlayModel.metricColumns.length; i++) {
+              if (this.project.overlayModels.metricsOverlayModel.metricColumns[i].columnName === columnName)
+                this.colOffset[i+1] += 12;
+            }
+          }
+        }
+      }
+      for (let i = 0; i < this.colWidths.length; ++i) {
+        this.colWidths[i] += this.colOffset[i];
+      }
+      
+      d3.selectAll('table.metrics-overview thead tr.overview-row th')
+        .data(this.colWidths)
+        .each(function(data, index) {
+          d3.select(this).select('svg')
+            .style('paddingTop', 0)
+            .style('paddingBottom', 0)
+            .style('paddingRight', 0)
+            .style('paddingLeft', 6);
+        });
+      d3.selectAll('table.metrics-overview thead tr.column-names *')
+        .data(this.colWidths)
+        .each(function(data, index) {
+          d3.select(this)
+            .style('paddingTop', 0)
+            .style('paddingBottom', 0)
+            .style('paddingRight', 0)
+            .style('paddingLeft', 6);
+      });
+      this.tableOverlay.fillCols();
+      this.tableOverlay.fillScrollVis();
+    }
+    if (this.tableOverlay) {
+      this.tableOverlay.updateOverlayPositions();
+    }
+    if (this.colHead && this.dataBody) {
+        let colBox = this.colHead.nativeElement.getBoundingClientRect();
+        this.overlayOffsetTop = colBox.height;
+        this.overlayWidth = colBox.width;
+        this.bodyHeight = this.dataBody.nativeElement.getBoundingClientRect().height;
+      }
   }
 }

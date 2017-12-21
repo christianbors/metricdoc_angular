@@ -22,7 +22,7 @@ export class OpenRefineService {
   private openRefineServerUrl = 'http://localhost:3333/command/';
   private isSuccess;
 
-  model: MetricsOverlayModel;
+  private model: MetricsOverlayModel;
 
   constructor (private http: Http, private jsonp: Jsonp) {
   	// this.params = new URLSearchParams();
