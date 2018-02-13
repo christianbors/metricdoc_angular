@@ -27,6 +27,7 @@ import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { SidebarModule } from 'ng-sidebar';
 import { MetricBrowserComponent } from './metric-browser/metric-browser.component';
 import { MetricPreviewComponent } from './test/metric-preview/metric-preview.component';
+import { OpenDataProvenanceVisComponent } from './open-data-prov/provenance-vis/open-data-provenance-vis.component';
 
 const appRoutes: Routes = [
   {
@@ -63,6 +64,23 @@ const appRoutes: Routes = [
     path: 'metric-project/:projectId',
     component: OpenRefineComponent
   },
+  // Open Data Provenance - Adequate - Provenance Vis
+  {
+    path: 'open-data-provenance/:projectName',
+    component: OpenDataProvenanceVisComponent,
+    data: 
+      {
+        title: 'Open Data Provenance Visualization'
+      }
+  },
+  {
+    path: 'open-data-provenance',
+    component: OpenDataProvenanceVisComponent,
+    data: 
+      {
+        title: 'Open Data Provenance Visualization'
+      }
+  },
   { path: '**', component: ProjectListComponent }
 ];
 
@@ -81,7 +99,11 @@ const appRoutes: Routes = [
     CheckInputDirectiveDirective,
     ProjectListComponent,
     CreateProjectComponent,
-    ProjectListPipe, NonMetricsProjectListPipe, MetricBrowserComponent, MetricPreviewComponent
+    ProjectListPipe, 
+    NonMetricsProjectListPipe, 
+    MetricBrowserComponent, 
+    MetricPreviewComponent, 
+    OpenDataProvenanceVisComponent
   ],
   imports: [
     RouterModule.forRoot(appRoutes, { enableTracing: true }),
