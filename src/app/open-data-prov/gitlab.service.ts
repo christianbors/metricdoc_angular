@@ -24,7 +24,16 @@ export class GitlabService {
 
   getCommits(projectId: any) : Observable<any> {
     // let params = this.initializeParams(projectId);
-    return this.http.get(this.gitlabUrl + '/' + projectId + '/repository/commits', this.httpOptions)
+    return this.http.get(this.gitlabUrl + '/' + projectId + '/repository/commits?per_page=100', this.httpOptions) //?since=2017-01-01T00:00:00Z
+      .map(this.extractData)
+      .catch(this.handleError);
+  }
+
+  getCommit(projectId: any, commitId: any) : Observable<any> {
+    let id = commitId;
+    if(commitId.id)
+      id = commitId.id;
+    return this.http.get(this.gitlabUrl + '/' + projectId + '/repository/commits/' + id, this.httpOptions)
       .map(this.extractData)
       .catch(this.handleError);
   }
