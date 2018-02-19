@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Http, Response, Jsonp, URLSearchParams }	from '@angular/http';
+import { Http, Headers, Response, Jsonp, URLSearchParams }	from '@angular/http';
+import { FormsModule, FormControl } from '@angular/forms';
 
 import { Observable } from 'rxjs/Rx';
 
@@ -41,6 +42,46 @@ export class OpenRefineService {
       this.model = body;
     }
     return body || { };
+  }
+
+  createOpenRefineMetricsProject(projectName: any, projectId: string, commit_short: any, format: string, separator: string, content: any) : Observable<MetricsOverlayModel> {
+    let params:URLSearchParams = new URLSearchParams();
+
+    // let data = {
+    //   'project-name': projectName,
+    //   'format': format,
+    //   'project-file': content
+    // }
+    
+    let opt = {
+      guessCellValueTypes:true,
+      projectTags:[projectId, commit_short],
+      ignoreLines:-1,
+      processQuotes:true,
+      fileSource: content,
+      encoding:"",
+      separator: separator,
+      storeBlankCellsAsNulls:true,
+      storeBlankRows:true,
+      skipDataLines:0,
+      includeFileSources:false,
+      headerLines:1,
+      limit:-1,
+      projectName: projectName
+    };
+
+    let body = new FormData();
+    body.append("download", content);
+
+    params.set("project-name", projectName);
+    params.set("format", format);
+    params.set("options", JSON.stringify(opt));
+    params.set("project-file", content);
+
+
+    return this.http.post(this.openRefineServerUrl + 'core/create-project-from-upload', body, { search: params })
+      .map(this.extractData)
+      .catch(this.handleError);
   }
 
   setupProject(projectId: any, metricFunctions: any) : Observable<MetricsOverlayModel> {

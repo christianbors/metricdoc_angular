@@ -38,6 +38,19 @@ export class GitlabService {
       .catch(this.handleError);
   }
 
+  //todo extend to fetch file information (csv, etc., meta-information)
+  getRawFileUrl(projectId: string, filename: string, commit: string) : string {
+    let searchParams = new URLSearchParams();
+    searchParams.set("ref", commit);
+    // replace folder structure elements
+    filename = filename.replace("/", "%2F");
+    return this.gitlabUrl + '/' + projectId + "/repository/files/" + filename + "/raw?ref=" + commit;
+    // return this.http.get(this.gitlabUrl + '/' + projectId + "/repository/files/" + filename + "/raw", { search: searchParams })
+    //   .map(response => response.text())
+    //   // .map(this.extractData)
+    //   .catch(this.handleError);
+  }
+
   private extractData(res: Response) {
     // response => <string[]> response.json()[1];
 

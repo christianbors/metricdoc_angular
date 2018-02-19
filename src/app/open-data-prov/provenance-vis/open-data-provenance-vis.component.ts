@@ -5,13 +5,14 @@ import { Router, ActivatedRoute, ParamMap } from '@angular/router';
 import { Observable } from 'rxjs/Rx';
 
 import { GitlabService } from '../gitlab.service';
+import { OpenRefineService } from '../../shared/open-refine/open-refine.service';
 
 import * as d3 from 'd3';
 
 @Component({
   selector: 'app-open-data-provenance-vis',
   templateUrl: './open-data-provenance-vis.component.html',
-  providers: [ GitlabService ],
+  providers: [ GitlabService, OpenRefineService ],
   styleUrls: ['./open-data-provenance-vis.component.scss']
 })
 export class OpenDataProvenanceVisComponent implements OnInit {
@@ -19,6 +20,7 @@ export class OpenDataProvenanceVisComponent implements OnInit {
   private projectId: string;
   private commits: any[];
   private projects: any[];
+  private currentProject: any;
   private xDistByTime: boolean = false;
 
   private d3Transform;
@@ -29,30 +31,29 @@ export class OpenDataProvenanceVisComponent implements OnInit {
   constructor(
     private http: Http,
     private route: ActivatedRoute,
-    private gitlabService: GitlabService
-    ) {
-    this.d3Transform = require("d3-transform"); }
+    private gitlabService: GitlabService,
+    private openRefineService: OpenRefineService
+  ) {
+    this.d3Transform = require("d3-transform");
+  }
 
   ngOnInit() {
     this.projectId = this.route.snapshot.paramMap.get('projectName');
-    this.getAllProjects();
-    if(this.projectId) {
-      this.getCommitHistory();
-    }
-  }
-
-  getAllProjects() {
+    //initialize projects and commits
     this.gitlabService.getProjects().subscribe(
       projects => {
         this.projects = projects;
+        if(this.projectId) {
+          this.getCommitHistory();
+        }
       },
       error => {
         console.log(error);
-      })
+      });
   }
 
   getCommitHistory() {
-    
+    this.currentProject = this.projects.find(d => { return d.id == this.projectId});
     this.gitlabService.getCommits(this.projectId).subscribe(data => {
       this.commits = data;
       let obs = [];
@@ -68,16 +69,70 @@ export class OpenDataProvenanceVisComponent implements OnInit {
           commitCurrent.stats = commitInfo.stats;
         }
         this.createTimelineVis();
+        this.createQualityStream();
       })
     });
+  }
+
+  private createQualityStream() {
+    if(this.currentProject) {
+      let projectObs: any[] = [];
+        this.openRefineService.getAllProjectMetadata().subscribe((projectsOverviewMetadata: any) =>{
+          
+          let projectsMetadata = [];
+          // for(let refineProjectId in projectsOverviewMetadata.projects) {
+            // console.log(projectsOverviewMetadata.projects[refineProjectId]);
+            // projectsMetadata.push(this.openRefineService.getRefineProject(refineProjectId));
+          
+            for (let commit of this.commits) {
+              let projectFromCommit;
+              let currentProjectId;
+              let filterForProject = [];
+              for(let projectMetaId in projectsOverviewMetadata.projects) {
+                let currentProjMeta = projectsOverviewMetadata.projects[projectMetaId];
+                if(currentProjMeta.tags.indexOf(this.projectId) > -1)
+                  filterForProject.push({id: projectMetaId, meta: currentProjMeta});
+              }
+              projectFromCommit = filterForProject.find(proj => { return proj.meta.tags.indexOf(commit.short_id) > -1});
+              // let refineProj = Object.entries(projectsOverviewMetadata.projects).find(data => { 
+              //   return data[1].tags.indexOf(commit) >= 0;
+              // })
+              if(projectFromCommit) {
+                // we found an already existing dataset
+                projectObs.push(this.openRefineService.getRefineProject(projectFromCommit.id));
+              } else {
+                let dataUrl = this.gitlabService.getRawFileUrl(this.projectId, "resources%2FKnstler_der_Sammlung_mumok", commit.short_id);
+                projectObs.push(this.openRefineService.createOpenRefineMetricsProject(this.currentProject.name, this.projectId, commit.short_id, "text/line-based/*sv", ",", dataUrl))
+              }
+            }
+            Observable.forkJoin(projectObs).subscribe((projectIds: any[]) => {
+              // .map((data: any) => {
+              // console.log(data);
+              let metricRecommendations = []
+              for(let projectId of projectIds) {
+                metricRecommendations.push(this.openRefineService.recommendMetrics(projectId));
+              }
+              Observable.forkJoin(metricRecommendations).subscribe((recommendations: any[]) => {
+                // .map((metrics:any) => {
+                  let qualityProjects = []
+                  for (let i = 0; i < projectIds.length; ++i) {
+                    qualityProjects.push(this.openRefineService.setupProject(projectIds[i], recommendations[i]));
+                  }
+                  Observable.forkJoin(qualityProjects).subscribe((qualityProjects: any[]) => {
+                    console.log(qualityProjects);
+                  });
+                // })
+              })
+            })
+          // }
+        })
+    }
   }
 
   private createTimelineVis() {
     let m = [20, 15, 15, 120], //top right bottom left
       w = 1500 - m[1] - m[3],
-      h = 350 - m[0] - m[2],
-      miniHeight = this.commits.length * 12 + 50,
-      mainHeight = h - miniHeight - 50;
+      h = 350 - m[0] - m[2];
 
     let svg = d3.select("svg.git-graph");
 
@@ -107,6 +162,7 @@ export class OpenDataProvenanceVisComponent implements OnInit {
         commitLinks.push({source: comm.id, target: parent});
       }
     }
+
     // calculate scaling
     let maxTime = d3.max(this.commits, (commit: any) => {return commit.created_at});
     let minTime = d3.min(this.commits, (commit: any) => {return commit.created_at});
@@ -123,20 +179,22 @@ export class OpenDataProvenanceVisComponent implements OnInit {
     let color = d3.scaleOrdinal(d3.schemeCategory20);
 
     let scaleYMax = d3.max(parents, (parentCount: any) => { return parentCount.count });
-    let scaleY = d3.scaleLinear().domain([0, scaleYMax]).range([0, h]);
+    let miniHeight = scaleYMax * 40 + 50, //40 accords to maximum additions and deletions
+        mainHeight = h - miniHeight - 50;
+    let scaleY = d3.scaleLinear().domain([-1, scaleYMax]).range([0, miniHeight]);
 
     //TODO: forceX either do x axis distribution by date or by commit (evenly distributed)
     //      add dropdown to toggle 
     let forceX;
     if(this.xDistByTime) {
-      forceX = d3.forceX((commit: any) => { return scaleXByTime(Date.parse(commit.created_at)) }).strength(1);
+      forceX = d3.forceX((commit: any) => { return scaleXByTime(Date.parse(commit.created_at)) }).strength(10);
     }
     else {
-      forceX = d3.forceX((commit: any, i: number) => { return scaleXByCommit(i) }).strength(1);
+      forceX = d3.forceX((commit: any, i: number) => { return scaleXByCommit(i) }).strength(10);
     }
 
     this.sim = d3.forceSimulation().force("xAxis", forceX)
-      .force("yAxis", d3.forceY((commit: any) => { return (scaleY(commit.yHeight)/2) }).strength(10))
+      .force("yAxis", d3.forceY((commit: any) => { return (scaleY(commit.yHeight)) }).strength(10))
       .force("link", d3.forceLink().id((commit: any) => { return commit.id }));
 
     let visCanvas = svg.append("g")
@@ -187,6 +245,32 @@ export class OpenDataProvenanceVisComponent implements OnInit {
         .attr("height", (d) => { return scaleChangeDeletions(d.stats.deletions) })
         .attr("transform", this.d3Transform.transform().translate(-17, 0))
         .attr("fill", "red");
+
+    if(this.xDistByTime) {
+      visCanvas.append("g")
+        .attr("class", "x-axis")
+        .attr("transform", this.d3Transform.transform().translate(0, mainHeight))
+        .call(d3.axisBottom(scaleXByTime)
+          .tickFormat(d3.timeFormat("%Y-%m-%d"))
+          .tickArguments([d3.timeWeek.every(1)])
+          .ticks(this.commits.length))
+        .selectAll("text")
+          .style("text-anchor", "end")
+          .attr("dx", "-.8em")
+          .attr("dy", ".15em")
+          .attr("transform", this.d3Transform.transform().rotate(-65));
+    } else {
+      // visCanvas.append("g")
+      //   .attr("class", "x-axis")
+      //   .attr("transform", this.d3Transform.transform().translate(0, mainHeight))
+      //   .call(d3.axisBottom(scaleXByCommit)
+      //     .ticks(this.commits.length+2))
+      //   .selectAll("text")
+      //     .style("text-anchor", "end")
+      //     .attr("dx", "-.8em")
+      //     .attr("dy", ".15em")
+      //     .attr("transform", this.d3Transform.transform().rotate(-65));
+    }
 
     node.append("title").text((commit) => { return commit.title });
     
