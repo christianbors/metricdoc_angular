@@ -8,6 +8,7 @@ import { GitlabService } from '../gitlab.service';
 import { OpenRefineService } from '../../shared/open-refine/open-refine.service';
 
 import * as d3 from 'd3';
+import * as d3ScaleChromatic from 'd3-scale-chromatic';
 
 @Component({
   selector: 'app-open-data-provenance-vis',
@@ -19,8 +20,10 @@ export class OpenDataProvenanceVisComponent implements OnInit {
 
   private projectId: string;
   private commits: any[];
-  private projects: any[];
+  private gitlabProjects: any[];
   private currentProject: any;
+  private projectsFromCommits = [];
+  private qualityProjects: any[];
   private xDistByTime: boolean = false;
 
   private d3Transform;
@@ -42,7 +45,7 @@ export class OpenDataProvenanceVisComponent implements OnInit {
     //initialize projects and commits
     this.gitlabService.getProjects().subscribe(
       projects => {
-        this.projects = projects;
+        this.gitlabProjects = projects;
         if(this.projectId) {
           this.getCommitHistory();
         }
@@ -53,7 +56,7 @@ export class OpenDataProvenanceVisComponent implements OnInit {
   }
 
   getCommitHistory() {
-    this.currentProject = this.projects.find(d => { return d.id == this.projectId});
+    this.currentProject = this.gitlabProjects.find(d => { return d.id == this.projectId});
     this.gitlabService.getCommits(this.projectId).subscribe(data => {
       this.commits = data;
       let obs = [];
@@ -69,63 +72,208 @@ export class OpenDataProvenanceVisComponent implements OnInit {
           commitCurrent.stats = commitInfo.stats;
         }
         this.createTimelineVis();
-        this.createQualityStream();
+        this.createOrFetchQualityProjects();
       })
     });
   }
 
-  private createQualityStream() {
+  private createOrFetchQualityProjects() {
     if(this.currentProject) {
       let projectObs: any[] = [];
-        this.openRefineService.getAllProjectMetadata().subscribe((projectsOverviewMetadata: any) =>{
+      let metricProjects = [];
+      let metricProjectsMetadata = [];
+      this.openRefineService.getAllProjectMetadata().subscribe((projectsOverviewMetadata: any) =>{
+        // let filterForProject = [];
+        for(let projectMetaId in projectsOverviewMetadata.projects) {
+          let currentProjMeta = projectsOverviewMetadata.projects[projectMetaId];
+          if(currentProjMeta.tags.indexOf(this.projectId) > -1)
+            this.projectsFromCommits.push({id: projectMetaId, meta: currentProjMeta});
+        }
+
+        let projectsMetadata = [];
+        let projectFromCommit;
+        for (let commit of this.commits) {
+          let currentProjectId;
+          projectFromCommit = this.projectsFromCommits.find(proj => { return proj.meta.tags.indexOf(commit.short_id) > -1});
           
-          let projectsMetadata = [];
-          // for(let refineProjectId in projectsOverviewMetadata.projects) {
-            // console.log(projectsOverviewMetadata.projects[refineProjectId]);
-            // projectsMetadata.push(this.openRefineService.getRefineProject(refineProjectId));
-          
-            for (let commit of this.commits) {
-              let projectFromCommit;
-              let currentProjectId;
-              let filterForProject = [];
-              for(let projectMetaId in projectsOverviewMetadata.projects) {
-                let currentProjMeta = projectsOverviewMetadata.projects[projectMetaId];
-                if(currentProjMeta.tags.indexOf(this.projectId) > -1)
-                  filterForProject.push({id: projectMetaId, meta: currentProjMeta});
-              }
-              projectFromCommit = filterForProject.find(proj => { return proj.meta.tags.indexOf(commit.short_id) > -1});
-              // let refineProj = Object.entries(projectsOverviewMetadata.projects).find(data => { 
-              //   return data[1].tags.indexOf(commit) >= 0;
-              // })
-              if(projectFromCommit) {
-                // we found an already existing dataset
-                projectObs.push(this.openRefineService.getRefineProject(projectFromCommit.id));
-              } else {
-                let dataUrl = this.gitlabService.getRawFileUrl(this.projectId, "resources%2FKnstler_der_Sammlung_mumok", commit.short_id);
-                projectObs.push(this.openRefineService.createOpenRefineMetricsProject(this.currentProject.name, this.projectId, commit.short_id, "text/line-based/*sv", ",", dataUrl))
-              }
+          if(projectFromCommit) {
+            // we found an already existing dataset
+            metricProjects.push(this.openRefineService.getRefineProject(projectFromCommit.id));
+            projectFromCommit.commit = commit;
+          } else {
+            //TODO: take care of metadata, automatically create metrics project for all resource files
+        //     this.gitlabService.getRawFileUrl(this.projectId, "metadata.json", ).subscribe((data: any) => {
+        // let filenames = [];
+        // for(let file of data.resources) {
+        //   let filename:string = file.name;
+        // Ä, ä     \u00c4, \u00e4
+        // Ö, ö     \u00d6, \u00f6
+        // Ü, ü     \u00dc, \u00fc
+        // ß        \u00df
+        //   filenames.push(filename.replace(" ", "_").replace("\u00fc", ""))
+        // }
+            let dataUrl = this.gitlabService.getRawFileUrl(this.projectId, "resources%2FKnstler_der_Sammlung_mumok", commit.short_id);
+            projectObs.push(this.openRefineService.createOpenRefineMetricsProject(this.currentProject.name, this.projectId, commit.short_id, "text/line-based/*sv", ",", dataUrl))
+          }
+        }
+
+        if(metricProjects.length == this.commits.length) {
+          Observable.forkJoin(metricProjects).subscribe((projects: any[]) => {
+            let metricProjects = [];
+            this.qualityProjects = projects;
+            for(let i = 0; i < this.commits.length; ++i) {
+              let projOfCommit = this.projectsFromCommits.find(data => { return data.meta.tags.indexOf(this.commits[i].short_id) > -1 });
+              projOfCommit.models = projects[i];
             }
-            Observable.forkJoin(projectObs).subscribe((projectIds: any[]) => {
-              // .map((data: any) => {
-              // console.log(data);
-              let metricRecommendations = []
-              for(let projectId of projectIds) {
-                metricRecommendations.push(this.openRefineService.recommendMetrics(projectId));
-              }
-              Observable.forkJoin(metricRecommendations).subscribe((recommendations: any[]) => {
-                // .map((metrics:any) => {
-                  let qualityProjects = []
-                  for (let i = 0; i < projectIds.length; ++i) {
-                    qualityProjects.push(this.openRefineService.setupProject(projectIds[i], recommendations[i]));
+            //TODO: on demand evaluate metrics
+            // for(let proj of this.projectsFromCommits) {
+            //   metricProjects.push(this.openRefineService.evaluateMetrics(proj.id));
+            // }
+            // Observable.forkJoin(metricProjects).subscribe((projects: any[]) => {
+            //   for(let i = 0; i < this.commits.length; ++i) {
+            //     let projOfCommit = this.projectsFromCommits.find(data => { return data.meta.tags.indexOf(this.commits[i].short_id) > -1 });
+            //     projOfCommit.models.overlayModels.metricsOverlayModel = projects[i];
+            //   }
+            //   console.log(projects);
+            //   //TODO sort by commit
+            //   this.createQualityStream();
+            // })
+            this.createQualityStream();
+          });
+        } else{
+          Observable.forkJoin(projectObs).subscribe((projectsIds: any[]) => {
+            
+            let metricRecommendations = []
+            for(let projectId of projectsIds) {
+              metricRecommendations.push(this.openRefineService.recommendMetrics(projectId));
+            }
+            Observable.forkJoin(metricRecommendations).subscribe((recommendations: any[]) => {
+                let qualityProjects = []
+                for (let i = 0; i < projectsIds.length; ++i) {
+                  qualityProjects.push(this.openRefineService.setupProject(projectsIds[i], recommendations[i].columns));
+                }
+                Observable.forkJoin(qualityProjects).subscribe((qualityProjectsResponse: any[]) => {
+                  let metricProjects = []
+                  for(let i = 0; i < qualityProjectsResponse.length; ++i) {
+                    metricProjects.push(this.openRefineService.getOverlayModel(projectFromCommit));
                   }
-                  Observable.forkJoin(qualityProjects).subscribe((qualityProjects: any[]) => {
-                    console.log(qualityProjects);
-                  });
-                // })
-              })
+                    for(let commit of this.commits) {
+                      let projectFromCommit = this.projectsFromCommits.find(data => { return data.tags.indexOf(commit.short_id) > -1 });//filterForProject.find(proj => { return proj.meta.tags.indexOf(commit.short_id) > -1});
+                    for (let response of qualityProjectsResponse) {
+                      metricProjects.push(this.openRefineService.evaluateMetrics(response.historyEntry.id));
+                    }
+                    Observable.forkJoin(metricProjects).subscribe((qualityProjects: any[]) => {
+                      for(let response of qualityProjectsResponse) {
+                        metricProjects.push(this.openRefineService.getRefineProject(response.historyEntry.id));
+                      }
+                      Observable.forkJoin(metricProjects).subscribe((qualityProjects: any[]) => {
+                        this.projectsFromCommits = [];
+                        // for (let commit of this.commits) {
+                        //   let qualityProject
+                        //   this.projectsFromCommits.push()
+                        // }
+                        console.log(qualityProjects);
+                        this.createQualityStream();
+                      })
+                    })
+                  }
+                });
             })
-          // }
+          })
+        }
+      })
+    }
+  }
+
+  private createQualityStream() {
+    console.log(this.projectsFromCommits);
+    let svg = d3.select("svg.quality-stream");
+    for (let proj of this.projectsFromCommits) {
+      let overlayModel = proj.models.overlayModels.metricsOverlayModel;
+
+      let colorbrewer = require('colorbrewer');
+      let colColors = d3ScaleChromatic.schemeReds[overlayModel.availableMetrics.length];
+      let spanColors = d3ScaleChromatic.schemeOranges[overlayModel.availableMetrics.length];
+      let columnMetricColors = {};
+      let spanMetricColors = {};
+      for(let m in overlayModel.availableMetrics) {
+        columnMetricColors[overlayModel.availableMetrics[m]] = colColors[m];
+      }
+      for (let m in overlayModel.availableSpanningMetrics) {
+        spanMetricColors[overlayModel.availableSpanningMetrics[m]] = spanColors[m];
+      }
+
+      let stack = d3.stack().keys(overlayModel.availableMetrics) //.concat(this.metricsOverlayModel.availableSpanningMetrics)
+        .order(d3.stackOrderNone)
+        .offset(d3.stackOffsetNone)
+        .value(function(d, key) {
+          if(d) {
+            if (d.metrics && d.metrics[key])
+              return d.metrics[key].measure;
+          }
+        });
+
+      let metrics = stack(<any[]>overlayModel.metricColumns);
+      var bandScale = d3.scaleBand()
+        .domain(proj.models.columnModel.columns.map(function(d) { return d.name }))
+        .range([0, 500])
+        .padding(0);
+      var y = d3.scaleLinear().domain([0,overlayModel.availableMetrics.length]).range([540, 0])
+      
+      // let metricColors =  + overlayModel.availableSpanningMetrics.length;
+      // let colorrange = d3.scaleOrdinal(<any[]>d3ScaleChromatic.schemeOranges[overlayModel.availableMetrics.length]);
+
+      // let area = d3.area()
+      //   .x(function(d:any) {
+      //     console.log(bandScale(d.data.columnName));
+      //     return bandScale(d.data.columnName); 
+      //   })
+      //   .y0(function(d:any) {
+      //     // console.log(y(d[0]));
+      //     return y(d[1]); 
+      //   })
+      //   .y1(function(d:any) {
+      //     // console.log(y(d[1]));
+      //     return y(d[0]); 
+      //   });
+
+      svg.selectAll("g.metric")
+        .data(metrics)
+        .enter().append("g")
+          .attr("class", "metric")
+        .selectAll("area")
+        .data((d:any) => {
+          return d.map((obj:any, idx: any, data:any) => {
+            return {
+              0: obj[0],
+              1: obj[1],
+              columnName: obj.data.columnName,
+              metric: obj.data.metrics[data.key]
+            }
+          });
         })
+        .enter()
+        .append("rect")
+          .attr("x", (d:any, i:number, any:any) => {
+            // console.log(bandScale(d.columnName));
+            return bandScale(d.columnName);
+          })
+          .attr("y", (d:any) => { return y(d[1]) })
+          .attr("height", (d:any) => {
+            // if(d[1] > 0)
+            //   console.log(d[1]);
+            return y(d[0]) - y(d[1]);
+          })
+          .attr("width", bandScale.bandwidth())
+          .attr("fill", (d:any) => {
+            if(d && d.metric) {
+              if(columnMetricColors[d.metric.name])
+                return columnMetricColors[d.metric.name];
+              if(spanMetricColors[d.metric.name])
+                return spanMetricColors[d.metric.name];
+            }
+            return 0;
+          });
     }
   }
 

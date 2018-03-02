@@ -87,10 +87,13 @@ export class OpenRefineService {
   setupProject(projectId: any, metricFunctions: any) : Observable<MetricsOverlayModel> {
     let params = this.initializeParams(projectId);
     params.set('computeDuplicates', 'false');
+    // new HttpParams().set('metricsConfigList', JSON.stringify(metricFunctions))
     if (metricFunctions)
       params.set('metricsConfigList', JSON.stringify(metricFunctions));
+    // let body = new FormData();
+    // body.append("metricsConfigList", );
 
-    return this.http.post(this.openRefineServerUrl + 'metric-doc/createMetricsExtension', params)
+    return this.http.post(this.openRefineServerUrl + 'metric-doc/createMetricsExtension', params)//{ metricsConfigList: JSON.stringify(metricFunctions)}, { search: params })
       .map(this.extractData)
       .catch(this.handleError);
   }
