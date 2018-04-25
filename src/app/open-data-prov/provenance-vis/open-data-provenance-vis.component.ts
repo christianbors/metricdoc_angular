@@ -27,8 +27,12 @@ export class OpenDataProvenanceVisComponent implements OnInit {
   private xDistByTime: boolean = false;
 
   private d3Transform;
+  private d3Scale;
   private r: number = 8;
 
+  private m = [20, 80, 15, 120]; //top right bottom left
+  private w: number;
+  private h: number;
   private sim;
 
   constructor(
@@ -38,6 +42,7 @@ export class OpenDataProvenanceVisComponent implements OnInit {
     private openRefineService: OpenRefineService
   ) {
     this.d3Transform = require("d3-transform");
+    this.d3Scale = require("d3-scale-chromatic");
   }
 
   ngOnInit() {
@@ -53,6 +58,8 @@ export class OpenDataProvenanceVisComponent implements OnInit {
       error => {
         console.log(error);
       });
+    this.w = 1500 - this.m[1] - this.m[3],
+    this.h = 350 - this.m[0] - this.m[2];
   }
 
   getCommitHistory() {
@@ -124,7 +131,12 @@ export class OpenDataProvenanceVisComponent implements OnInit {
             for(let i = 0; i < this.commits.length; ++i) {
               let projOfCommit = this.projectsFromCommits.find(data => { return data.meta.tags.indexOf(this.commits[i].short_id) > -1 });
               projOfCommit.models = projects[i];
+              metricProjects.push(this.openRefineService.evaluateMetrics(projOfCommit.id));
             }
+            Observable.forkJoin(metricProjects).subscribe((qualityProjects: any[]) => { 
+              console.log("success");
+              this.createQualityStream();
+            });
             //TODO: on demand evaluate metrics
             // for(let proj of this.projectsFromCommits) {
             //   metricProjects.push(this.openRefineService.evaluateMetrics(proj.id));
@@ -138,7 +150,6 @@ export class OpenDataProvenanceVisComponent implements OnInit {
             //   //TODO sort by commit
             //   this.createQualityStream();
             // })
-            this.createQualityStream();
           });
         } else{
           Observable.forkJoin(projectObs).subscribe((projectsIds: any[]) => {
@@ -172,7 +183,6 @@ export class OpenDataProvenanceVisComponent implements OnInit {
                         //   let qualityProject
                         //   this.projectsFromCommits.push()
                         // }
-                        console.log(qualityProjects);
                         this.createQualityStream();
                       })
                     })
@@ -186,102 +196,127 @@ export class OpenDataProvenanceVisComponent implements OnInit {
   }
 
   private createQualityStream() {
-    console.log(this.projectsFromCommits);
     let svg = d3.select("svg.quality-stream");
-    for (let proj of this.projectsFromCommits) {
-      let overlayModel = proj.models.overlayModels.metricsOverlayModel;
-
-      let colorbrewer = require('colorbrewer');
-      let colColors = d3ScaleChromatic.schemeReds[overlayModel.availableMetrics.length];
-      let spanColors = d3ScaleChromatic.schemeOranges[overlayModel.availableMetrics.length];
-      let columnMetricColors = {};
-      let spanMetricColors = {};
-      for(let m in overlayModel.availableMetrics) {
-        columnMetricColors[overlayModel.availableMetrics[m]] = colColors[m];
-      }
-      for (let m in overlayModel.availableSpanningMetrics) {
-        spanMetricColors[overlayModel.availableSpanningMetrics[m]] = spanColors[m];
-      }
-
-      let stack = d3.stack().keys(overlayModel.availableMetrics) //.concat(this.metricsOverlayModel.availableSpanningMetrics)
-        .order(d3.stackOrderNone)
-        .offset(d3.stackOffsetNone)
-        .value(function(d, key) {
-          if(d) {
-            if (d.metrics && d.metrics[key])
-              return d.metrics[key].measure;
+    
+    // prepare key pairs, we need to sort by metric instead of column
+    let keys = [];
+    this.projectsFromCommits.forEach((d: any, i: number, data: any[]) => {
+      for(let col of d.models.overlayModels.metricsOverlayModel.metricColumns) {
+        if(col != null && !col.columnName.includes("404 File Not Found")) {
+          for(let metric of d.models.overlayModels.metricsOverlayModel.availableMetrics) {
+            let keyPair = {col: col.columnName, metric: metric};
+            if(!keys.some( k => k.col === keyPair.col && k.metric === keyPair.metric))
+              keys.push(keyPair);
+            // if(keys.indexOf(keyPair) == -1) {
+            //   keys.push(keyPair);
+            // }
           }
+        }
+      }
+      for(let col of d.models.overlayModels.metricsOverlayModel.metricColumns) {
+        // check if dataset might be missing
+        if(col != null && !col.columnName.includes("404 File Not Found")) {
+          for (let spanMetric of d.models.overlayModels.metricsOverlayModel.availableSpanningMetrics) {
+            let keyPair = {col: col.columnName, metric: spanMetric};
+            if(!keys.some( k => k.col === keyPair.col && k.metric === keyPair.metric))
+              keys.push(keyPair);
+          }
+        }
+      }
+    });
+
+    keys.sort((a: any, b: any) => {
+      if (a.metric < b.metric) return -1;
+      else if (a.metric > b.metric) return 1;
+      else return 0;
+    })
+
+    let stack = d3.stack()
+      .keys(keys)
+      .value((d: any, keyPair: any, j, data) => {
+        let metricCols = d.models.overlayModels.metricsOverlayModel.metricColumns;
+        let mCol = d.models.overlayModels.metricsOverlayModel.metricColumns.filter((d, i) => {
+          return d.columnName === keyPair.col;
+        })[0];
+        if(mCol && mCol.metrics != null && mCol.metrics[keyPair.metric] != null)
+          return mCol.metrics[keyPair.metric].measure;
+        else if (mCol && mCol.spanningMetrics != null && mCol.spanningMetrics[keyPair.metric] != null)
+          return mCol.spanningMetrics[keyPair.metric].measure;
+        else return 0;
+      })(this.projectsFromCommits);
+
+    // max scaling is max number of available metrics
+    let y = d3.scaleLinear().rangeRound([this.h, 0]).domain([0, 2.5]).nice();
+    // scaling
+    let projIds = this.projectsFromCommits.map((d: any) => { return d.id })
+    let scaleXByCommit = d3.scaleBand().domain(projIds).range([15, this.w]).padding(0);
+    let metricsAvailable = this.projectsFromCommits[0].models.overlayModels.metricsOverlayModel.availableMetrics.concat(this.projectsFromCommits[0].models.overlayModels.metricsOverlayModel.availableSpanningMetrics)
+    
+    let setChromatic = [].concat(d3ScaleChromatic.schemeSet2);
+    let darkChromatic = [].concat(d3ScaleChromatic.schemeDark2);
+    let colorScale = d3.scaleOrdinal(setChromatic).domain(metricsAvailable);
+    let colorStroke = d3.scaleOrdinal(darkChromatic).domain(metricsAvailable);
+    
+    svg.selectAll("g")
+      .data(stack)
+      .enter().append("g")
+        .attr("transform", this.d3Transform.transform().translate(20, 15))
+        .attr("fill", (d:any) => { 
+          return colorScale(d.key.metric); 
+        })
+        .attr("stroke", (d:any) => {
+          return colorStroke(d.key.metric);
+        })
+        .attr("class", (d:any) => { return d.id })
+      .selectAll("rect")
+      .data((d:any) => { return d; })
+      .enter().append("rect")
+        .attr("x", (d:any) => {
+          return scaleXByCommit(d.data.id); 
+        })
+        .attr("y", (d) => { 
+          return y(d[1]); 
+        })
+        .attr("height", (d) => {
+          return y(d[0]) - y(d[1]); 
+        })
+        .attr("width", scaleXByCommit.bandwidth())
+        .on("click", (d: any, i: number) => {
+          window.open("http://localhost:4200/metric-project/" + d.data.id, "blank");
         });
 
-      let metrics = stack(<any[]>overlayModel.metricColumns);
-      var bandScale = d3.scaleBand()
-        .domain(proj.models.columnModel.columns.map(function(d) { return d.name }))
-        .range([0, 500])
-        .padding(0);
-      var y = d3.scaleLinear().domain([0,overlayModel.availableMetrics.length]).range([540, 0])
-      
-      // let metricColors =  + overlayModel.availableSpanningMetrics.length;
-      // let colorrange = d3.scaleOrdinal(<any[]>d3ScaleChromatic.schemeOranges[overlayModel.availableMetrics.length]);
+    svg.selectAll("g").append("title").text((d: any) => { return "dirtiness of " + d.key.col + " - " + d.key.metric });
 
-      // let area = d3.area()
-      //   .x(function(d:any) {
-      //     console.log(bandScale(d.data.columnName));
-      //     return bandScale(d.data.columnName); 
-      //   })
-      //   .y0(function(d:any) {
-      //     // console.log(y(d[0]));
-      //     return y(d[1]); 
-      //   })
-      //   .y1(function(d:any) {
-      //     // console.log(y(d[1]));
-      //     return y(d[0]); 
-      //   });
-
-      svg.selectAll("g.metric")
-        .data(metrics)
-        .enter().append("g")
-          .attr("class", "metric")
-        .selectAll("area")
-        .data((d:any) => {
-          return d.map((obj:any, idx: any, data:any) => {
-            return {
-              0: obj[0],
-              1: obj[1],
-              columnName: obj.data.columnName,
-              metric: obj.data.metrics[data.key]
-            }
-          });
-        })
-        .enter()
-        .append("rect")
-          .attr("x", (d:any, i:number, any:any) => {
-            // console.log(bandScale(d.columnName));
-            return bandScale(d.columnName);
-          })
-          .attr("y", (d:any) => { return y(d[1]) })
-          .attr("height", (d:any) => {
-            // if(d[1] > 0)
-            //   console.log(d[1]);
-            return y(d[0]) - y(d[1]);
-          })
-          .attr("width", bandScale.bandwidth())
-          .attr("fill", (d:any) => {
-            if(d && d.metric) {
-              if(columnMetricColors[d.metric.name])
-                return columnMetricColors[d.metric.name];
-              if(spanMetricColors[d.metric.name])
-                return spanMetricColors[d.metric.name];
-            }
-            return 0;
-          });
-    }
+    // let legend = svg.selectAll("g").append("g")
+    //   .attr("class", "legend")
+    //   .attr("transform", this.d3Transform.transform().translate(20, 15))
+    //   .style("font-size", "12px")
+    //   .call(this.d3Legend);
+    let legend = svg.append("g")
+      .attr("transform", this.d3Transform.transform().translate(this.w+180, 15));
+    legend.selectAll("rect")
+    .data(metricsAvailable)
+      .enter().append("rect")
+      .attr("width", 14)
+      .attr("height", 14)
+      .attr("rx", 14)
+      .attr("ry", 14)
+      .attr("fill", (d: any) => { return colorScale(d)})
+      .attr("transform", (d: any, i: number) => { return "translate(0, "+i*16+")" });
+    legend.selectAll("text.legend")
+    .data(metricsAvailable)
+      .enter().append("text")
+      .text((d: any) => { return d; })
+      .style("text-anchor", "end")
+      .attr("dy", ".25em")
+      .attr("transform", (d: any, i: number) => { return "translate(-4, "+i*16+")" })
+      .attr("y", 9);
+      // .attr("transform", (d: any, i: number, data: any[]) => {
+      //   return this.d3Transform.transform().translate(5, i*15);
+      // });
   }
 
   private createTimelineVis() {
-    let m = [20, 15, 15, 120], //top right bottom left
-      w = 1500 - m[1] - m[3],
-      h = 350 - m[0] - m[2];
-
     let svg = d3.select("svg.git-graph");
 
     // prepare commmits, calculate height for commit 
@@ -321,14 +356,14 @@ export class OpenDataProvenanceVisComponent implements OnInit {
     let scaleChangeAdditions = d3.scaleLinear().domain([0, maxAdditions]).range([2, 40]);
     let scaleChangeDeletions = d3.scaleLinear().domain([0, maxDeletions]).range([2, 40]);
 
-    let scaleXByTime = d3.scaleTime().domain([Date.parse(minTime), Date.parse(maxTime)]).range([0, w]);
-    let scaleXByCommit = d3.scaleLinear().domain([0, this.commits.length+1]).range([w, 0]);
+    let scaleXByTime = d3.scaleTime().domain([Date.parse(minTime), Date.parse(maxTime)]).range([0, this.w - 15]);
+    let scaleXByCommit = d3.scaleLinear().domain([0, this.commits.length]).range([this.w - 15, 0]);
 
     let color = d3.scaleOrdinal(d3.schemeCategory20);
 
     let scaleYMax = d3.max(parents, (parentCount: any) => { return parentCount.count });
     let miniHeight = scaleYMax * 40 + 50, //40 accords to maximum additions and deletions
-        mainHeight = h - miniHeight - 50;
+        mainHeight = this.h - miniHeight - 50;
     let scaleY = d3.scaleLinear().domain([-1, scaleYMax]).range([0, miniHeight]);
 
     //TODO: forceX either do x axis distribution by date or by commit (evenly distributed)
@@ -368,6 +403,14 @@ export class OpenDataProvenanceVisComponent implements OnInit {
     .enter().append("circle")
       .attr("r", this.r)
       .attr("fill", (commit) => { return color(commit.yHeight) })
+      .on("click", (d: any, i: number) => {
+        console.log(d);
+        let shortId = d.short_id;
+        let proj = this.projectsFromCommits.find((d, i, a) => {
+          return d.meta.tags.includes(shortId);
+        });
+        window.open(this.currentProject.web_url + "/commit/" + d.id, "blank");
+      })
       .call(d3.drag()
         .on("start", this.dragstarted)
         .on("drag", this.dragged)
@@ -420,7 +463,7 @@ export class OpenDataProvenanceVisComponent implements OnInit {
       //     .attr("transform", this.d3Transform.transform().rotate(-65));
     }
 
-    node.append("title").text((commit) => { return commit.title });
+    node.append("title").text((commit) => { return "commit msg: " + commit.title });
     
     this.sim.nodes(this.commits)
       .on("tick", ticked);

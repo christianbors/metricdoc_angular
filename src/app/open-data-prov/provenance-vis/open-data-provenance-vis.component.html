@@ -3,7 +3,7 @@
     Active Metric Projects
   </li>
   <li class="list-group-item list-group-item-action flex-column" 
-    *ngFor="let proj of projects; let rowIndex = index; trackBy: rowFn"
+    *ngFor="let proj of gitlabProjects; let rowIndex = index; trackBy: rowFn"
     [routerLink]="['/open-data-provenance', proj.id]"
     routerLinkActive="active">
     <div class="d-flex w-100 justify-content-between">
@@ -20,9 +20,9 @@
     </div>
 </div>
 <svg class="quality-stream" [style.width.px]="1500"
-  [style.height.px]="540"></svg>
+  [style.height.px]="350" *ngIf="projectId"></svg>
 <svg class="git-graph" [style.width.px]="1500"
-  [style.height.px]="350"></svg>
+  [style.height.px]="350" *ngIf="projectId"></svg>
 <!-- <div>
   <p *ngFor="let commit of commits">created: {{commit.created_at}}, id: {{commit.id}}</p>
 </div> -->
