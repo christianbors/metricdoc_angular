@@ -15,22 +15,22 @@ import { MetricFunction } from '../shared/open-refine/model/metric-function';
 })
 export class CreateProjectComponent implements OnInit {
 
-  private projectId;
-  private refineUrl: string;
-  private projectMetadata: ProjectMetadata;
-  private refineProject: OpenRefineProject;
-  private refineProjects:any;
-  private rowModel: any;
-  private metricFunctions: any;
-  private metricsDisabled: boolean[][];
+  projectId;
+  refineUrl: string;
+  projectMetadata: ProjectMetadata;
+  refineProject: OpenRefineProject;
+  refineProjects:any;
+  rowModel: any;
+  metricFunctions: any;
+  metricsDisabled: boolean[][];
 
-  private importSuccess: boolean = false;
+  importSuccess: boolean = false;
 
-  private errorMessage:string;
+  errorMessage:string;
 
-  constructor(private route: ActivatedRoute, 
-    private router: Router,
-    private openRefineService: OpenRefineService) {
+  constructor(public route: ActivatedRoute, 
+    public router: Router,
+    public openRefineService: OpenRefineService) {
     this.openRefineService.getAllProjectMetadata().subscribe(
       refineProjects => {
           this.refineProjects = refineProjects.projects;

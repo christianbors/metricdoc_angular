@@ -9,11 +9,11 @@ import { GlobalNavService } from './global-nav.service';
   providers: [ GlobalNavService ]
 })
 export class AppComponent {
-  private sidebarShown:boolean = true;
-  private navbarPos:string;
-  private projectId:string;
+  sidebarShown:boolean = true;
+  navbarPos:string;
+  projectId:string;
 
-  constructor(private router: Router, private globalNavService: GlobalNavService) {
+  constructor(public router: Router, public globalNavService: GlobalNavService) {
     router.events.subscribe(
       (change:any) => {
         if(change instanceof NavigationEnd) {

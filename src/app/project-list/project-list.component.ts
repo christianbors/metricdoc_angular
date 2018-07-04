@@ -15,13 +15,13 @@ import { OpenRefineProject } from '../shared/open-refine/model/open-refine-proje
 })
 export class ProjectListComponent implements OnInit {
 
-  private refineProjects:any;
-  private errorMessage:String;
-  private sidebarShown:boolean;
+  refineProjects:any;
+  errorMessage:String;
+  sidebarShown:boolean;
 
   subscription: Subscription;
 
-  constructor(private openRefineService: OpenRefineService) { 
+  constructor(protected openRefineService: OpenRefineService) { 
 
     this.openRefineService.getAllProjectMetadata().subscribe(
       refineProjects => {

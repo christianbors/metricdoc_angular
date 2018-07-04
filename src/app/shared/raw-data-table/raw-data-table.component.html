@@ -62,7 +62,6 @@
                     <div ngbDropdownMenu aria-labelledby="dropdownBasic1">
                       <button class="dropdown-item btn-sm" (click)="handleSort($event, 'sortOriginal')">Original Structure</button>
                       <button class="dropdown-item btn-sm" (click)="handleSort($event, 'sortByDirtiness')">By Dirtiness</button>
-                      <!-- <button class="dropdown-item btn-sm" (click)="handleSort($event, 'sortByName')">By Name</button> -->
                     </div>
                   </div>
               </th>
@@ -95,8 +94,6 @@
                     [style.paddingTop.px]="6"
                     (contextmenu)="onContextMenu($event, metricColumn, project.overlayModels.metricsOverlayModel.availableMetrics[rowIndex])"
                     (click)="onClickOverview($event, metric, cellIndex)"></th>
-                    <!-- [style.width.px]="colWidths[cellIndex+1]" -->
-                    <!-- (contextmenu)="onContextMenu($event, metric, cellIndex)" -->
               </ng-container>
             </tr>
           </ng-container>
@@ -126,7 +123,8 @@
       </tbody>
     </table>
   </div>
-  <pagination *ngIf="rowModel" class="pagination-sm"
+  <!-- TODO: replace pagination -->
+  <!-- <pagination *ngIf="rowModel" class="pagination-sm"
     [style.padding.px]="6" 
     [totalItems]="rowModel.filtered" 
     [(ngModel)]="page" 
@@ -136,13 +134,18 @@
     [rotate]="false" 
     (numPages)="numPages = $event" 
     (pageChanged)="pageChanged($event)"
-    (click)="changePage($event)"></pagination>
+    (click)="changePage($event)"></pagination> -->
+  <ngb-pagination *ngIf="rowModel"
+    [collectionSize]="rowModel.filtered"
+    [(page)]="page"
+    [maxSize]="maxSize"
+    [boundaryLinks]="true"
+    [pageSize]="itemsPerPage"
+    [size]="sm"
+    aria-label="Default Pagination"></ngb-pagination>
   <context-menu #existingMetric>
-    <!-- <ng-template contextMenuItem (execute)="showMessage('Hi, ' + $event?.item?.name)">
-      Say hi!
-    </ng-template> -->
     <ng-template contextMenuItem divider="true"></ng-template>
-    <ng-template contextMenuItem let-item (execute)="deleteMetric($event.item)"> <!-- showMessage($event.item.name + ' said: ' + $event.item.otherProperty) -->
+    <ng-template contextMenuItem let-item (execute)="deleteMetric($event.item)">
       Bye, {{item?.name}}
     </ng-template>
     <ng-template contextMenuItem passive="true">

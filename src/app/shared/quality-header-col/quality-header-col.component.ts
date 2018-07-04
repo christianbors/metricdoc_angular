@@ -9,17 +9,17 @@ import * as d3 from 'd3';
 })
 export class QualityHeaderColComponent implements OnChanges, AfterContentChecked {
 
-  @Input() private metricCol;
-  @Input() private metric;
-  @Input() private tooltip;
-  @Input() private metricsOverlayModel;
-  @Input() private columnMetricColors;
-  @Input() private svgWidth;
+  @Input() metricCol;
+  @Input() metric;
+  @Input() tooltip;
+  @Input() metricsOverlayModel;
+  @Input() columnMetricColors;
+  @Input() svgWidth;
 
-  private host;
-  private htmlElement: HTMLElement;
+  host;
+  htmlElement: HTMLElement;
 
-  constructor(private element: ElementRef) {
+  constructor(protected element: ElementRef) {
     this.htmlElement = this.element.nativeElement;
     this.host = d3.select(this.element.nativeElement);
   }

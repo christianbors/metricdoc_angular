@@ -18,28 +18,28 @@ import * as d3ScaleChromatic from 'd3-scale-chromatic';
 })
 export class OpenDataProvenanceVisComponent implements OnInit {
 
-  private projectId: string;
-  private commits: any[];
-  private gitlabProjects: any[];
-  private currentProject: any;
-  private projectsFromCommits = [];
-  private qualityProjects: any[];
-  private xDistByTime: boolean = false;
+  projectId: string;
+  commits: any[];
+  gitlabProjects: any[];
+  currentProject: any;
+  projectsFromCommits = [];
+  qualityProjects: any[];
+  xDistByTime: boolean = false;
 
-  private d3Transform;
-  private d3Scale;
-  private r: number = 8;
+  d3Transform;
+  d3Scale;
+  r: number = 8;
 
-  private m = [20, 80, 15, 120]; //top right bottom left
-  private w: number;
-  private h: number;
-  private sim;
+  m = [20, 80, 15, 120]; //top right bottom left
+  w: number;
+  h: number;
+  sim;
 
   constructor(
-    private http: Http,
-    private route: ActivatedRoute,
-    private gitlabService: GitlabService,
-    private openRefineService: OpenRefineService
+    protected http: Http,
+    protected route: ActivatedRoute,
+    protected gitlabService: GitlabService,
+    protected openRefineService: OpenRefineService
   ) {
     this.d3Transform = require("d3-transform");
     this.d3Scale = require("d3-scale-chromatic");
@@ -84,7 +84,7 @@ export class OpenDataProvenanceVisComponent implements OnInit {
     });
   }
 
-  private createOrFetchQualityProjects() {
+  createOrFetchQualityProjects() {
     if(this.currentProject) {
       let projectObs: any[] = [];
       let metricProjects = [];
@@ -195,7 +195,7 @@ export class OpenDataProvenanceVisComponent implements OnInit {
     }
   }
 
-  private createQualityStream() {
+  createQualityStream() {
     let svg = d3.select("svg.quality-stream");
     
     // prepare key pairs, we need to sort by metric instead of column
@@ -316,7 +316,7 @@ export class OpenDataProvenanceVisComponent implements OnInit {
       // });
   }
 
-  private createTimelineVis() {
+  createTimelineVis() {
     let svg = d3.select("svg.git-graph");
 
     // prepare commmits, calculate height for commit 

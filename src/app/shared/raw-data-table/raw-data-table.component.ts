@@ -23,22 +23,22 @@ import * as d3Tip from 'd3-tip';
   providers: [ OpenRefineService ]
 })
 export class RawDataTableComponent implements OnInit, AfterContentChecked, AfterViewChecked {
-  @Input() private projectId:any;
-  @Input() private project:OpenRefineProject;
-  @Input() private columnMetricColors;
-  @Input() private spanMetricColors;
-  // private metricsOverlayModel:MetricsOverlayModel;
+  @Input() projectId:any;
+  @Input() project:OpenRefineProject;
+  @Input() columnMetricColors;
+  @Input() spanMetricColors;
+  // metricsOverlayModel:MetricsOverlayModel;
 
-  private colWidths: number[] = [];
-  private rowModel:any[];
-  private maxSize:number = 5;
-  private page:number = 1;
-  private itemsPerPage:number = 100;
-  private rowsFrom:number = 0;
-  private disabled:boolean = false;
+  colWidths: number[] = [];
+  rowModel:any[];
+  maxSize:number = 5;
+  page:number = 1;
+  itemsPerPage:number = 100;
+  rowsFrom:number = 0;
+  disabled:boolean = false;
 
   // external js libraries
-  private tooltip;
+  tooltip;
 
   @ViewChild('headerCols') headerCols;
   @ViewChild('bodyCols') bodyCols;
@@ -46,10 +46,10 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   @ViewChild('colOverviewHead') colHead;
   @ViewChild('spanOverviewHead') spanHead;
   @ViewChild('tableOverlay') tableOverlay;
-  private overlayOffsetTop:number = 0;
-  private overlayWidth:number = 0;
-  private bodyHeight: number = 0;
-  private colOffset: number[] = [];
+  overlayOffsetTop:number = 0;
+  overlayWidth:number = 0;
+  bodyHeight: number = 0;
+  colOffset: number[] = [];
 
   @Output() onOverviewMetricSelected = new EventEmitter();
   @Output() tableHeightChanged = new EventEmitter();
@@ -59,17 +59,17 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   @ViewChild('existingMetric') public existingMenu: ContextMenuComponent;
   @ViewChild('newMetric') public newMenu: ContextMenuComponent;
 
-  private selectedMetricCells: any;
-  private selectedMetrics: Metric[];
-  private selectedColumns: string[];
-  private highlightedRows: number[];
+  selectedMetricCells: any;
+  selectedMetrics: Metric[];
+  selectedColumns: string[];
+  highlightedRows: number[];
 
-  private updated: boolean = false;
-  private changeDetected: boolean = false;
-  private oldColumns: any[];
+  updated: boolean = false;
+  changeDetected: boolean = false;
+  oldColumns: any[];
 
-  constructor(private openRefineService: OpenRefineService,
-    private contextMenuService: ContextMenuService) { }
+  constructor(protected openRefineService: OpenRefineService,
+    protected contextMenuService: ContextMenuService) { }
 
   ngOnInit() {
     this.pageChanged({ 

@@ -52,34 +52,34 @@ export class OpenRefineComponent implements OnInit, OnChanges {
   mode = 'Observable';
   subscription: Subscription;
 
-  private state: string = 'inactive';
-  private expanded: boolean = false;
+  state: string = 'inactive';
+  expanded: boolean = false;
 
-  private projectId: string
+  projectId: string
 
   @ViewChild(RawDataTableComponent)
-  private rawDataTable: RawDataTableComponent;
+  rawDataTable: RawDataTableComponent;
 
-  private projectMetadata: ProjectMetadata;
-  private openRefineProject: OpenRefineProject;
-  private rowModel: any;
+  projectMetadata: ProjectMetadata;
+  openRefineProject: OpenRefineProject;
+  rowModel: any;
 
-  private columnMetricColors: any;
-  private spanMetricColors: any;
+  columnMetricColors: any;
+  spanMetricColors: any;
 
-  private selectedMetrics: Metric[];
-  private selectedColumns: string[];
-  private rowsFrom:number;
-  private rowsTo: number;
+  selectedMetrics: Metric[];
+  selectedColumns: string[];
+  rowsFrom:number;
+  rowsTo: number;
 
-  private detailViewOffsetTop: number;
+  detailViewOffsetTop: number;
 
-  private sortBy: string = "none";
+  sortBy: string = "none";
 
-  constructor (  private route: ActivatedRoute,
-    private router: Router,
-    private openRefineService: OpenRefineService,
-    private globalNavService: GlobalNavService
+  constructor ( protected route: ActivatedRoute,
+    protected router: Router,
+    protected openRefineService: OpenRefineService,
+    protected globalNavService: GlobalNavService
   ) {
     globalNavService.recalc$.subscribe(
       recalc => {
@@ -245,7 +245,7 @@ export class OpenRefineComponent implements OnInit, OnChanges {
   }
   //TODO: add edit commands with @Output functions
 
-  private updateProjectData(openRefineProject: OpenRefineProject) {
+  updateProjectData(openRefineProject: OpenRefineProject) {
     this.sortMetricColumns();
     // this.openRefineService.model = this.openRefineProject.overlayModels.metricsOverlayModel;
 

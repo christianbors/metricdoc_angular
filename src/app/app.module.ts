@@ -21,7 +21,6 @@ import { ProjectListComponent } from './project-list/project-list.component';
 import { CreateProjectComponent } from './create-project/create-project.component';
 import { ProjectListPipe, NonMetricsProjectListPipe } from './project-list/project-list.pipe';
 
-import { AccordionModule, PaginationModule, } from 'ng-bootstrap'
 import { ContextMenuModule } from 'ngx-contextmenu';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { SidebarModule } from 'ng-sidebar';
@@ -107,8 +106,6 @@ const appRoutes: Routes = [
   ],
   imports: [
     RouterModule.forRoot(appRoutes, { enableTracing: true }),
-    AccordionModule.forRoot(),
-    PaginationModule.forRoot(),
     NgbModule.forRoot(),
     SidebarModule.forRoot(),
     BrowserModule,

@@ -24,11 +24,11 @@ export class MetricChecksOverviewComponent implements OnInit {
   @Output() onSelectionUpdated = new EventEmitter();
 
 
-  private selectionInvalid: boolean;
-  private checkFeedback: string;
-  private alertType: string;
+  selectionInvalid: boolean;
+  checkFeedback: string;
+  alertType: string;
 
-  constructor(private openRefineService: OpenRefineService) { }
+  constructor(protected openRefineService: OpenRefineService) { }
 
   public status: any = {
     isFirstOpen: false,
