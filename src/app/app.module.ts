@@ -27,6 +27,9 @@ import { SidebarModule } from 'ng-sidebar';
 import { MetricBrowserComponent } from './metric-browser/metric-browser.component';
 import { MetricPreviewComponent } from './test/metric-preview/metric-preview.component';
 import { OpenDataProvenanceVisComponent } from './open-data-prov/provenance-vis/open-data-provenance-vis.component';
+import { RefineProvenanceComponent } from './refine-provenance/refine-provenance.component';
+import { ProvenanceProjectListPipe, NonProvenanceProjectListPipe } from './refine-provenance/provenance-project-list.pipe';
+import { RefineProvenanceExplorerComponent } from './refine-provenance-explorer/refine-provenance-explorer.component';
 
 const appRoutes: Routes = [
   {
@@ -80,6 +83,22 @@ const appRoutes: Routes = [
         title: 'Open Data Provenance Visualization'
       }
   },
+  {
+    path: 'refine-provenance',
+    component: RefineProvenanceComponent,
+    data: 
+      {
+        title: 'OpenRefine Quality Provenance List'
+      }
+  },
+  {
+    path: 'provenance-explorer/:projectId',
+    component: RefineProvenanceExplorerComponent,
+    data: 
+      {
+        title: 'OpenRefine Provenance Explorer'
+      }
+  },
   { path: '**', component: ProjectListComponent }
 ];
 
@@ -102,7 +121,11 @@ const appRoutes: Routes = [
     NonMetricsProjectListPipe, 
     MetricBrowserComponent, 
     MetricPreviewComponent, 
-    OpenDataProvenanceVisComponent
+    OpenDataProvenanceVisComponent, 
+    RefineProvenanceComponent, 
+    ProvenanceProjectListPipe,
+    NonProvenanceProjectListPipe,
+    RefineProvenanceExplorerComponent
   ],
   imports: [
     RouterModule.forRoot(appRoutes, { enableTracing: true }),

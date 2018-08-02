@@ -1,0 +1,48 @@
+<h1>OpenRefine Quality Provenance Explorer</h1>
+<!-- <ul class="list-group"> -->
+<div class="list-group" style="margin-bottom: 12px" *ngIf="refineProjects">
+  <li class="list-group-item justify-content-between list-group-item-secondary">
+    Available Quality Provenance Projects
+    <span class="badge badge-default badge-pill">{{(refineProjects | provenanceProjectList).length}}</span>
+  </li>
+  <li class="list-group-item list-group-item-action flex-column" 
+    *ngFor="let proj of (refineProjects | provenanceProjectList); let rowIndex = index; trackBy: rowFn"
+    [routerLink]="['/provenance-explorer', proj.key]"
+    routerLinkActive="active">
+    <div class="d-flex w-100 justify-content-between">
+      <div class="float-left">
+        <span class="fa fa-calculator fa-lg"></span>
+        {{proj.value.name}}
+      </div>
+      <!-- <span class="float-left"></span> -->
+    </div>
+    <div class="d-flex w-100 justify-content-between">
+      <small class="float-left">last changed: {{proj.value.modified}}</small>
+      <small class="float-right">created: {{proj.value.created}}</small>
+    </div>
+  </li>
+</div>
+<!-- Projects without Metrics Added -->
+<div class="list-group" *ngIf="refineProjects">
+  <li class="list-group-item justify-content-between list-group-item-secondary">
+    Projects Without Provenance
+    <span class="badge badge-default badge-pill">{{(refineProjects | nonProvenanceProjectList).length}}</span>
+  </li>
+  <!-- (click)="openProject(rowIndex)"> -->
+  <li class="list-group-item list-group-item-action flex-column disabled" *ngFor="let proj of (refineProjects | nonProvenanceProjectList); let rowIndex = index; trackBy: rowFn"
+    [routerLink]="['/create-project', proj.key]"
+    routerLinkActive="active"
+    (click)="this.routineHelperService.navigateTo('create-project')">
+    <div class="d-flex w-100 justify-content-between">
+      <div class="float-left">
+        <span class="fa fa-calculator fa-lg"></span>
+        {{proj.value.name}}
+      </div>
+      <!-- <span class="float-left"></span> -->
+    </div>
+    <div class="d-flex w-100 justify-content-between">
+      <small class="float-left">last changed: {{proj.value.modified}}</small>
+      <small class="float-right">created: {{proj.value.created}}</small>
+    </div>
+  </li>
+</div>

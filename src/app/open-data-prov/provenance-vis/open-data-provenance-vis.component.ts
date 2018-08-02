@@ -8,7 +8,6 @@ import { GitlabService } from '../gitlab.service';
 import { OpenRefineService } from '../../shared/open-refine/open-refine.service';
 
 import * as d3 from 'd3';
-import * as d3ScaleChromatic from 'd3-scale-chromatic';
 
 @Component({
   selector: 'app-open-data-provenance-vis',
@@ -27,7 +26,7 @@ export class OpenDataProvenanceVisComponent implements OnInit {
   xDistByTime: boolean = false;
 
   d3Transform;
-  d3Scale;
+  d3ScaleChromatic;
   r: number = 8;
 
   m = [20, 80, 15, 120]; //top right bottom left
@@ -42,7 +41,7 @@ export class OpenDataProvenanceVisComponent implements OnInit {
     protected openRefineService: OpenRefineService
   ) {
     this.d3Transform = require("d3-transform");
-    this.d3Scale = require("d3-scale-chromatic");
+    this.d3ScaleChromatic = require("d3-scale-chromatic");
   }
 
   ngOnInit() {
@@ -252,8 +251,8 @@ export class OpenDataProvenanceVisComponent implements OnInit {
     let scaleXByCommit = d3.scaleBand().domain(projIds).range([15, this.w]).padding(0);
     let metricsAvailable = this.projectsFromCommits[0].models.overlayModels.metricsOverlayModel.availableMetrics.concat(this.projectsFromCommits[0].models.overlayModels.metricsOverlayModel.availableSpanningMetrics)
     
-    let setChromatic = [].concat(d3ScaleChromatic.schemeSet2);
-    let darkChromatic = [].concat(d3ScaleChromatic.schemeDark2);
+    let setChromatic = [].concat(this.d3ScaleChromatic.schemeSet2);
+    let darkChromatic = [].concat(this.d3ScaleChromatic.schemeDark2);
     let colorScale = d3.scaleOrdinal(setChromatic).domain(metricsAvailable);
     let colorStroke = d3.scaleOrdinal(darkChromatic).domain(metricsAvailable);
     
@@ -359,7 +358,7 @@ export class OpenDataProvenanceVisComponent implements OnInit {
     let scaleXByTime = d3.scaleTime().domain([Date.parse(minTime), Date.parse(maxTime)]).range([0, this.w - 15]);
     let scaleXByCommit = d3.scaleLinear().domain([0, this.commits.length]).range([this.w - 15, 0]);
 
-    let color = d3.scaleOrdinal(d3.schemeCategory20);
+    let color = d3.scaleOrdinal(d3.schemeCategory10);
 
     let scaleYMax = d3.max(parents, (parentCount: any) => { return parentCount.count });
     let miniHeight = scaleYMax * 40 + 50, //40 accords to maximum additions and deletions
@@ -389,7 +388,7 @@ export class OpenDataProvenanceVisComponent implements OnInit {
     .selectAll("line")
     .data(commitLinks)
     .enter().append("line")
-      .attr("stroke", (link) => {
+      .attr("stroke", (link:any) => {
         let source = this.commits.find((commit) => { return commit.id == link.source });
         let target = this.commits.find((commit) => { return commit.id == link.target });
         return source.yHeight > target.yHeight ? color(source.yHeight) : color(target.yHeight);

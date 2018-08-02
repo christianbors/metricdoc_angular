@@ -194,6 +194,16 @@ export class OpenRefineService {
       .catch(this.handleError);
   }
 
+  getProvenanceJSON(path: string) {
+    this.http.get(path)
+      .toPromise()
+      .then((response) => {
+        return response.json();
+      }).catch((err) => {
+      console.log(err);
+    });
+  }
+
   public handleError (error: Response | any) {
     // In a real world app, we might use a remote logging infrastructure
     let errMsg: string;
