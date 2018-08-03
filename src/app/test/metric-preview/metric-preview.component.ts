@@ -48,6 +48,7 @@ export class MetricPreviewComponent implements OnInit, OnChanges {
 
   private drawMetricOverview() {
     let svg = d3.select(this.htmlElement).select("svg");
+
     if(this.project.overlayModels["metricsOverlayModel"]) {
       let overlayModel = this.project.overlayModels["metricsOverlayModel"];
 
@@ -117,11 +118,15 @@ export class MetricPreviewComponent implements OnInit, OnChanges {
             // console.log(bandScale(d.columnName));
             return bandScale(d.columnName);
           })
-          .attr("y", (d:any) => { return y(d[1]) })
+          .attr("y", (d:any) => { 
+            if(!isNaN(d[1]))
+              return y(d[1]);
+            else return (y(0));
+          })
           .attr("height", (d:any) => {
-            // if(d[1] > 0)
-            //   console.log(d[1]);
-            return y(d[0]) - y(d[1]);
+            if(!isNaN(d[1]))
+              return y(d[0]) - y(d[1]);
+            else return 0;
           })
           .attr("width", bandScale.bandwidth())
           .attr("fill", (d:any) => {
