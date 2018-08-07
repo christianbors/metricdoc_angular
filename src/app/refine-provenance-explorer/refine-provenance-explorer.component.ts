@@ -47,12 +47,13 @@ export class RefineProvenanceExplorerComponent implements OnInit {
           this.provenanceOverlayModel = openRefineProject.overlayModels['qualityProvenance'];
 
           if(this.provenanceOverlayModel) {
-            let entities = Object.values(this.provenanceOverlayModel.provenance.entity);
-            let data = {
-              nodes: entities,
-              links: this.provenanceOverlayModel.provenance
-            }
-            let sankeyDiag = this.d3Sankey.sankey(data)
+            let graph = this.buildGraph(this.provenanceOverlayModel);
+            // let entities = Object.values(this.provenanceOverlayModel.provenance.entity);
+            // let data = {
+            //   nodes: entities,
+            //   links: this.provenanceOverlayModel.provenance
+            // }
+            let sankeyDiag = this.d3Sankey.sankey(graph)
               .nodeWidth(35)
               .nodePadding(10)
               .size([300, 500]);
@@ -88,5 +89,31 @@ export class RefineProvenanceExplorerComponent implements OnInit {
         },
         error => this.errorMessage = <any>error
       );
+  }
+
+  buildGraph(provenanceOverlayModel: any):any {
+    let links:any[] = [];
+    // for (var i = provenanceOverlayModel.provenance.length - 1; i >= 0; i--) {
+    //   provenanceOverlayModel.provenance[i]
+    // }
+
+    for (let key of Object.keys(provenanceOverlayModel.provenance.wasGeneratedBy)) {
+      let rev = provenanceOverlayModel.provenance.wasGeneratedBy[key]["prov:activity"];
+      let derived = provenanceOverlayModel.provenance.wasDerivedFrom[rev];
+      links.push(
+        {
+          source: derived["prov:usedEntity"],
+          target: provenanceOverlayModel.provenance.wasGeneratedBy[key]["prov:entity"],
+          generated: provenanceOverlayModel.provenance.wasGeneratedBy[key],
+          derived: derived,
+          value: Object.keys(provenanceOverlayModel.provenance.wasDerivedFrom).indexOf(rev)
+        });
+    }
+
+    let graph = {
+      nodes: provenanceOverlayModel.provenance.entity,
+      links: links
+    };
+    return graph;
   }
 }

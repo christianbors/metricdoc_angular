@@ -84,7 +84,7 @@ const appRoutes: Routes = [
       }
   },
   {
-    path: 'refine-provenance',
+    path: 'provenance-explorer',
     component: RefineProvenanceComponent,
     data: 
       {
