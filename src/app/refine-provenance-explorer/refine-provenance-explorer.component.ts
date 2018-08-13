@@ -53,38 +53,66 @@ export class RefineProvenanceExplorerComponent implements OnInit {
             //   nodes: entities,
             //   links: this.provenanceOverlayModel.provenance
             // }
-            let sankeyDiag = this.d3Sankey.sankey(graph)
-              .nodeWidth(35)
-              .nodePadding(10)
-              .size([300, 500]);
-            sankeyDiag.nodes((graph) => {
-              return graph["prov:value"];
-            }).links((link) => {
-              return link;
-            });
 
-            // this.d3Sankey.sankeyLinkHorizontal()
+            let sankeyDiag = this.d3Sankey.sankey()
+              .nodeWidth(15)
+              .nodePadding(10)
+              .extent([[1, 1], [500, 300]])
+              .nodeAlign(this.d3Sankey.sankeyCenter);
+            sankeyDiag.nodes(graph.nodes)
+              .links(graph.links)
+              .nodeId((node:any) => node.key);
+
+            // sankeyDiag.nodes((node) => {
+            //   return node["prov:value"];
+            // }).links((link) => {
+            //   return link;
+            // });
 
             d3.select("svg.sankey").append("g")
-              .attr("fill", "none")
               .attr("stroke", "#000")
-              .attr("stroke-opacity", 0.2)
-            .selectAll("path")
-            .data(sankeyDiag.graph.links)
-            .enter().append("path")
-              .attr("d", sankeyDiag)
-              .attr("stroke-width", function(d) { return 40; });
-            // sankeyDiag.nodes((graph) => {
-            //   graph.nodes = this.provenanceOverlayModel.provenance.entity;
-            //   return graph.nodes;
-            // })
-            
-            // sankeyDiag({nodes: this.provenanceOverlayModel., links: })
+            .selectAll("rect")
+            .data(sankeyDiag().nodes)
+            .enter().append("rect")
+              .attr("x", (d:any) => d.x0)
+              .attr("y", (d:any) => d.y0)
+              .attr("height", (d:any) => d.y1 - d.y0)
+              .attr("width", (d:any) => d.x1 - d.x0)
+              // .attr("fill", (d:any) => color(d.key.contains("column")))
+            .append("title")
+              .text((d:any) => {
+                return `${d.key}`;
+            });
+  //             format = {
+  //   const f = d3.format(",.0f");
+  //   return d => `${f(d)} TWh`;
+  // }
 
-            
+              const link = d3.select("svg.sankey").append("g")
+                .attr("fill", "none")
+                .attr("stroke-opacity", 0.5)
+              .selectAll("g")
+              .data(sankeyDiag().links)
+              .enter().append("g")
+                // .style("fill", "grey")
+                .attr("stroke-width", (d:any) => Math.max(1, d.width));
+                // .style("mix-blend-mode", "multiply");
 
-            // this.updateProjectData(openRefineProject);
-            // this.openRefineService.getProvenanceJSON(this.provenance.provFilePath);
+              const gradient = link.append("linearGradient")
+                // .attr("id", d => (d.uid = DOM.uid("link")).id)
+                .attr("gradientUnits", "userSpaceOnUse")
+                .attr("x1", (d:any) => d.source.x1)
+                .attr("x2", (d:any) => d.target.x0);
+              link.append("path")
+                .attr("d", this.d3Sankey.sankeyLinkHorizontal())
+                .attr("stroke", d => "grey")
+                .attr("stroke-width", (d:any) => Math.max(1, d.width));
+              // link.append("path")
+              //   .attr("d", this.d3Sankey.sankeyCenter())
+              //   .attr("stroke", (d:any) => { 
+              //     return d.uid;
+              //   })
+              //   .attr("stroke-width", (d:any) => Math.max(1, d.width));
           }
         },
         error => this.errorMessage = <any>error
@@ -106,12 +134,26 @@ export class RefineProvenanceExplorerComponent implements OnInit {
           target: provenanceOverlayModel.provenance.wasGeneratedBy[key]["prov:entity"],
           generated: provenanceOverlayModel.provenance.wasGeneratedBy[key],
           derived: derived,
-          value: Object.keys(provenanceOverlayModel.provenance.wasDerivedFrom).indexOf(rev)
+          value: 5,
+          depth: Object.keys(provenanceOverlayModel.provenance.wasDerivedFrom).indexOf(rev)
         });
     }
 
+    let nodes = [];
+    for (let wgb of Object.keys(provenanceOverlayModel.provenance.wasGeneratedBy)) {
+      // nodes.push({key: key, value: provenanceOverlayModel.provenance.entity[key]});
+      let entity = provenanceOverlayModel.provenance.entity[provenanceOverlayModel.provenance.wasGeneratedBy[wgb]['prov:entity']];
+      if (entity.depth)
+        ++entity.depth;
+      else
+        entity.depth = 1;
+    }
+    for (let key of Object.keys(provenanceOverlayModel.provenance.entity)) {
+      nodes.push({key: key, value: provenanceOverlayModel.provenance.entity[key], depth: provenanceOverlayModel.provenance.entity[key].depth});
+    }
+
     let graph = {
-      nodes: provenanceOverlayModel.provenance.entity,
+      nodes: nodes,
       links: links
     };
     return graph;
