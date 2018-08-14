@@ -121,10 +121,32 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
   buildGraph(provenanceOverlayModel: any):any {
     let links:any[] = [];
-    // for (var i = provenanceOverlayModel.provenance.length - 1; i >= 0; i--) {
-    //   provenanceOverlayModel.provenance[i]
-    // }
 
+    for (let key of Object.keys(provenanceOverlayModel.provenance.activity)) {
+      provenanceOverlayModel.provenance.activity[key].depth = 0;
+    }
+
+
+    for (let key of Object.keys(provenanceOverlayModel.provenance.wasDerivedFrom)) {
+      if (provenanceOverlayModel.provenance.wasDerivedFrom[key]["prov:usedEntity"]) {
+        let rev = provenanceOverlayModel.provenance.wasDerivedFrom[key]["prov:usedEntity"];
+        let actId = provenanceOverlayModel.provenance.wasDerivedFrom[key]["prov:activity"];
+        provenanceOverlayModel.provenance.activity[actId].depth = provenanceOverlayModel.provenance.activity[rev].depth + 1;
+      }
+      
+      /*
+      if (provenanceOverlayModel.provenance.activity[rev].depth) {
+        ++provenanceOverlayModel.provenance.activity[rev].depth;
+      }
+      else {
+        provenanceOverlayModel.provenance.activity[rev].depth = 0;
+      }*/
+    }
+
+    // nodes are the revisions, stored as activities
+    let nodes = Object.values(provenanceOverlayModel.provenance.activity);
+
+    /*
     for (let key of Object.keys(provenanceOverlayModel.provenance.wasGeneratedBy)) {
       let rev = provenanceOverlayModel.provenance.wasGeneratedBy[key]["prov:activity"];
       let derived = provenanceOverlayModel.provenance.wasDerivedFrom[rev];
@@ -139,7 +161,6 @@ export class RefineProvenanceExplorerComponent implements OnInit {
         });
     }
 
-    let nodes = [];
     for (let wgb of Object.keys(provenanceOverlayModel.provenance.wasGeneratedBy)) {
       // nodes.push({key: key, value: provenanceOverlayModel.provenance.entity[key]});
       let entity = provenanceOverlayModel.provenance.entity[provenanceOverlayModel.provenance.wasGeneratedBy[wgb]['prov:entity']];
@@ -151,6 +172,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
     for (let key of Object.keys(provenanceOverlayModel.provenance.entity)) {
       nodes.push({key: key, value: provenanceOverlayModel.provenance.entity[key], depth: provenanceOverlayModel.provenance.entity[key].depth});
     }
+*/
 
     let graph = {
       nodes: nodes,
