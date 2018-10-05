@@ -58,16 +58,40 @@ export class RefineProvenanceExplorerComponent implements OnInit {
               .nodeWidth(15)
               .nodePadding(10)
               .extent([[1, 1], [500, 300]])
-              .nodeAlign(this.d3Sankey.sankeyCenter);
+              .nodeAlign(this.d3Sankey.sankeyLeft);
+
             sankeyDiag.nodes(graph.nodes)
               .links(graph.links)
               .nodeId((node:any) => node.key);
 
-            // sankeyDiag.nodes((node) => {
-            //   return node["prov:value"];
-            // }).links((link) => {
-            //   return link;
-            // });
+            sankeyDiag().nodes.forEach((node: any) => {
+              node.value = 1;
+            });
+
+            const link = d3.select("svg.sankey").append("g")
+              .attr("fill", "none")
+              .attr("stroke-opacity", 0.35)
+            .selectAll("g")
+            .data(sankeyDiag().links)
+            .enter().append("g");
+
+            link.append("path")
+                // .attr("d", this.d3Sankey.sankeyLinkHorizontal())
+                .attr("d", this.linkSkewed)
+                // .attr("stroke", d => "grey")
+                .attr("fill", d => "grey")
+                .attr("fill-opacity", 0.35)
+                // .attr("stroke-width", (d:any) => Math.max(1, d.width))
+                .append("title")
+              .text((d:any) => {
+                return `${d.key}`;
+              });
+            // link.append("path")
+            //   .attr("d", this.d3Sankey.sankeyLinkHorizontal())
+            //   .attr("stroke", d => "grey")
+            //   .attr("stroke-opacity", 0.35)
+            //   .attr("stroke-width", (d:any) => Math.max(1, d.width));
+
 
             d3.select("svg.sankey").append("g")
               .attr("stroke", "#000")
@@ -76,43 +100,36 @@ export class RefineProvenanceExplorerComponent implements OnInit {
             .enter().append("rect")
               .attr("x", (d:any) => d.x0)
               .attr("y", (d:any) => d.y0)
-              .attr("height", (d:any) => d.y1 - d.y0)
+              .attr("height", (d:any) => 
+                d.y1 - d.y0
+                )
               .attr("width", (d:any) => d.x1 - d.x0)
-              // .attr("fill", (d:any) => color(d.key.contains("column")))
             .append("title")
-              .text((d:any) => {
-                return `${d.key}`;
-            });
-  //             format = {
-  //   const f = d3.format(",.0f");
-  //   return d => `${f(d)} TWh`;
-  // }
-
-              const link = d3.select("svg.sankey").append("g")
-                .attr("fill", "none")
-                .attr("stroke-opacity", 0.5)
-              .selectAll("g")
-              .data(sankeyDiag().links)
-              .enter().append("g")
-                // .style("fill", "grey")
-                .attr("stroke-width", (d:any) => Math.max(1, d.width));
-                // .style("mix-blend-mode", "multiply");
-
-              const gradient = link.append("linearGradient")
-                // .attr("id", d => (d.uid = DOM.uid("link")).id)
-                .attr("gradientUnits", "userSpaceOnUse")
-                .attr("x1", (d:any) => d.source.x1)
-                .attr("x2", (d:any) => d.target.x0);
-              link.append("path")
-                .attr("d", this.d3Sankey.sankeyLinkHorizontal())
-                .attr("stroke", d => "grey")
-                .attr("stroke-width", (d:any) => Math.max(1, d.width));
-              // link.append("path")
-              //   .attr("d", this.d3Sankey.sankeyCenter())
-              //   .attr("stroke", (d:any) => { 
-              //     return d.uid;
-              //   })
-              //   .attr("stroke-width", (d:any) => Math.max(1, d.width));
+              .text((d:any) => `${d.key}`);
+            d3.select("svg.sankey").append("g")
+              .attr("class", "nodesText")
+              .style("font", "10px sans-serif")
+            .selectAll("text")
+            .data(sankeyDiag().nodes)
+            .enter().append("text")
+              .attr("x", (d:any) => d.x0)
+              .attr("y", (d:any) => d.y1 + 8)
+              .attr("dy", "0.35em")
+              .attr("text-anchor", (d:any) => "start")
+              .text((d:any) => d.entity["prov:label"]);
+            
+            d3.select("svg.sankey").append("g")
+              .attr("class", "linksText")
+              .style("font", "10px sans-serif")
+            .selectAll("text")
+            .data(sankeyDiag().links)
+            .enter().append("text")
+              .attr("x", (d:any) => 
+                (d.source.x1 + d.target.x1)/2)
+              .attr("y", (d:any) => (d.y0 + d.y1)/2)
+              .attr("dy", "0.35em")
+              .attr("text-anchor", (d:any) => "start")
+              .text((d:any) => d.value);
           }
         },
         error => this.errorMessage = <any>error
@@ -122,16 +139,20 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   buildGraph(provenanceOverlayModel: any):any {
     let links:any[] = [];
 
-    for (let key of Object.keys(provenanceOverlayModel.provenance.activity)) {
-      provenanceOverlayModel.provenance.activity[key].depth = 0;
-    }
-
+    let historyEntries = Object.keys(provenanceOverlayModel.provenance.entity).filter((key: string) => {
+      if (key.includes('history_entry')) {
+        provenanceOverlayModel.provenance.entity[key].depth = 0;
+        return true;
+      } else {
+        return false;
+      }
+    });
 
     for (let key of Object.keys(provenanceOverlayModel.provenance.wasDerivedFrom)) {
       if (provenanceOverlayModel.provenance.wasDerivedFrom[key]["prov:usedEntity"]) {
-        let rev = provenanceOverlayModel.provenance.wasDerivedFrom[key]["prov:usedEntity"];
-        let actId = provenanceOverlayModel.provenance.wasDerivedFrom[key]["prov:activity"];
-        provenanceOverlayModel.provenance.activity[actId].depth = provenanceOverlayModel.provenance.activity[rev].depth + 1;
+        let used = provenanceOverlayModel.provenance.wasDerivedFrom[key]["prov:usedEntity"];
+        let gen = provenanceOverlayModel.provenance.wasDerivedFrom[key]["prov:generatedEntity"];
+        provenanceOverlayModel.provenance.entity[gen].depth = provenanceOverlayModel.provenance.entity[used].depth + 1;
       }
       
       /*
@@ -143,36 +164,34 @@ export class RefineProvenanceExplorerComponent implements OnInit {
       }*/
     }
 
-    // nodes are the revisions, stored as activities
-    let nodes = Object.values(provenanceOverlayModel.provenance.activity);
+    // nodes are the history entries, stored as entities
+    let nodeEntries = Object.entries(provenanceOverlayModel.provenance.entity).filter((entity: any) => entity[0].includes('history_entry'));
 
-    /*
-    for (let key of Object.keys(provenanceOverlayModel.provenance.wasGeneratedBy)) {
-      let rev = provenanceOverlayModel.provenance.wasGeneratedBy[key]["prov:activity"];
-      let derived = provenanceOverlayModel.provenance.wasDerivedFrom[rev];
-      links.push(
-        {
-          source: derived["prov:usedEntity"],
-          target: provenanceOverlayModel.provenance.wasGeneratedBy[key]["prov:entity"],
-          generated: provenanceOverlayModel.provenance.wasGeneratedBy[key],
-          derived: derived,
-          value: 5,
-          depth: Object.keys(provenanceOverlayModel.provenance.wasDerivedFrom).indexOf(rev)
-        });
+    for (let wdf of Object.values(provenanceOverlayModel.provenance.wasDerivedFrom)) {
+      let value = Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).filter((wdf_filter: any) => wdf_filter["prov:usedEntity"]===wdf["prov:usedEntity"]).length;
+      if(wdf["prov:usedEntity"])
+        links.push(
+          {
+            source: wdf["prov:usedEntity"],
+            target: wdf["prov:generatedEntity"],
+            generated: provenanceOverlayModel.provenance.entity[wdf["prov:generatedEntity"]],
+            value: 1/value,
+            depth: Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).indexOf(wdf)
+          });
     }
 
-    for (let wgb of Object.keys(provenanceOverlayModel.provenance.wasGeneratedBy)) {
-      // nodes.push({key: key, value: provenanceOverlayModel.provenance.entity[key]});
-      let entity = provenanceOverlayModel.provenance.entity[provenanceOverlayModel.provenance.wasGeneratedBy[wgb]['prov:entity']];
-      if (entity.depth)
-        ++entity.depth;
-      else
-        entity.depth = 1;
+    // for (let wgb of Object.keys(provenanceOverlayModel.provenance.wasGeneratedBy)) {
+    //   let entity = provenanceOverlayModel.provenance.entity[provenanceOverlayModel.provenance.wasGeneratedBy[wgb]['prov:entity']];
+    //   if (entity.depth)
+    //     ++entity.depth;
+    //   else
+    //     entity.depth = 1;
+    // }
+    let nodes:any[] = [];
+    for (let entry of nodeEntries) {
+      nodes.push({key: entry[0], value: 1, entity: entry[1], depth: entry[1].depth});
     }
-    for (let key of Object.keys(provenanceOverlayModel.provenance.entity)) {
-      nodes.push({key: key, value: provenanceOverlayModel.provenance.entity[key], depth: provenanceOverlayModel.provenance.entity[key].depth});
-    }
-*/
+
 
     let graph = {
       nodes: nodes,
@@ -180,4 +199,25 @@ export class RefineProvenanceExplorerComponent implements OnInit {
     };
     return graph;
   }
+
+  linkSkewed(d: any): any {
+    var curvature = .6;
+    var x0 = d.source.x1,
+        x1 = d.target.x0,
+        xi = d3.interpolateNumber(x0, x1),
+        x2 = xi(curvature),
+        x3 = xi(1 - curvature),
+        y0 = d.source.y0,
+        y1 = d.target.y0;
+    return "M" + x0 + "," + y0
+         + "C" + x2 + "," + y0
+         + " " + x3 + "," + y1
+         + " " + x1 + "," + y1
+         + "L" + x1 + "," + (y1+d.target.y1 - d.target.y0)
+         + "C" + x3 + "," + (y1+d.target.y1 - d.target.y0)
+         + " " + x2 + "," + (y0+d.source.y1 - d.source.y0)
+         + " " + x0 + "," + (y0+d.source.y1 - d.source.y0)
+         + "L" + x0 + "," + y0;
+  }
+
 }
