@@ -57,7 +57,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
             let sankeyDiag = this.d3Sankey.sankey()
               .nodeWidth(15)
               .nodePadding(10)
-              .extent([[1, 1], [500, 300]])
+              .extent([[1, 1], [1000, 600]])
               .nodeAlign(this.d3Sankey.sankeyLeft);
 
             sankeyDiag.nodes(graph.nodes)
@@ -92,18 +92,89 @@ export class RefineProvenanceExplorerComponent implements OnInit {
             //   .attr("stroke-opacity", 0.35)
             //   .attr("stroke-width", (d:any) => Math.max(1, d.width));
 
+            // nest columns so stacking works properly
+            // let nested = d3.nest()
+            //   .key((d:any) => { return d[0]})
+            //   .key((d:any) => { return d[1]});
+            
+            let stackMetric = d3.stack()
+              .keys((d:any) => { return Object.entries(d.metrics) })
+              .value((d:any, key:any) => {
+                let val:any[] = Object.values(d.metrics).filter((m: any) => {
+                  return m.type === key;
+                });
+                return val[0].$;
+              });
 
             d3.select("svg.sankey").append("g")
               .attr("stroke", "#000")
-            .selectAll("rect")
+            .selectAll(".history_nodes")
             .data(sankeyDiag().nodes)
-            .enter().append("rect")
-              .attr("x", (d:any) => d.x0)
-              .attr("y", (d:any) => d.y0)
-              .attr("height", (d:any) => 
-                d.y1 - d.y0
-                )
-              .attr("width", (d:any) => d.x1 - d.x0)
+            .enter().append("g")
+              .attr("class", "history_nodes")
+              // .attr("x", (d:any) => d.x0)
+              // .attr("y", (d:any) => d.y0)
+              // .attr("height", (d:any) => d.y1 - d.y0)
+              // .attr("width", (d:any) => d.x1 - d.x0)
+              // .attr("fill", "none") //d3.schemeCategory10[0]
+              .each((data: any, idx: number, node:any) => {  
+                let activityId = data.key.substring(14);
+                let nodeHeight:number = data.y1 - data.y0;
+                let nodeWidth:number = data.x1 - data.x0;
+
+                let cols:any[] = Object.entries(this.provenanceOverlayModel.provenance.entity).filter((entity: any) => entity[0].includes('column:'));
+                let colMetrics:any[] = [];
+                let mNames:string[] = [];
+                cols.forEach((v:any) => {
+                  let qEntry = v[1]["quality:"+activityId];
+                  if(qEntry) {
+                    colMetrics.push({column: v[0], metrics: qEntry});
+                    for(let m of qEntry) {
+                      if(!mNames.includes(m.type))
+                        mNames.push(m.type);
+                    }
+                  }
+                })
+
+                let stack = stackMetric.keys(mNames)(colMetrics); //.keys(colNames)
+                let maxVal:any = d3.max(stack, (d:any) => { return d3.max(d, (row:any) => { return row[1] }) });
+                let scaleY = d3.scaleLinear().rangeRound([nodeHeight, 0]).domain([0, maxVal]);
+                
+                d3.select(node[idx])
+                  .selectAll(".metric")
+                  .data(stack)
+                .enter().append("g")
+                  .attr("class", "metric")
+                  .attr("fill", "none")
+                  .attr("transform", "translate(0," + data.y0 + ")")
+                  // .attr("fill", (d:any) => { return z(d.type)})
+                .selectAll("rect")
+                .data((d:any) => {return d})
+                .enter().append("rect")
+                  .attr("x", data.x0)
+                  .attr("y", (d:any) => { return scaleY(d[1]); })
+                  .attr("height", (d:any) => { return scaleY(d[0]) - scaleY(d[1]); })
+                  .attr("width", nodeWidth);
+
+                // d3.select(node[idx])
+                //   .selectAll("g")
+                //   .data(cols)
+                // .enter().append("g")
+                //   .attr("class", (d:any) => d[0])
+                //   .each((d:any, idx:any, grp:any[]) => {
+                    
+                //     d3.select(grp[idx])
+                //       .selectAll("rect")
+                //       .data(st)
+                //       .enter().append("rect")
+                //       .attr("height", nodeHeight/grp.length)
+                //       .attr("width", nodeWidth-2)
+                //       .attr("stroke", "black")
+                //       .attr("stroke-width", 1);
+                //   });
+                let a = node.activity;
+
+              })
             .append("title")
               .text((d:any) => `${d.key}`);
             d3.select("svg.sankey").append("g")
@@ -165,18 +236,22 @@ export class RefineProvenanceExplorerComponent implements OnInit {
     }
 
     // nodes are the history entries, stored as entities
-    let nodeEntries = Object.entries(provenanceOverlayModel.provenance.entity).filter((entity: any) => entity[0].includes('history_entry'));
+    let nodeEntries:any[] = Object.entries(provenanceOverlayModel.provenance.entity).filter((entity: any) => entity[0].includes('history_entry'));
+
+    // let columns:any[] = Object.entries(provenanceOverlayModel.provenance.entity).filter((entity: any) => entity[0].includes('column:'));
 
     for (let wdf of Object.values(provenanceOverlayModel.provenance.wasDerivedFrom)) {
       let value = Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).filter((wdf_filter: any) => wdf_filter["prov:usedEntity"]===wdf["prov:usedEntity"]).length;
-      if(wdf["prov:usedEntity"])
+      let metrics: any[];
+      if(wdf["prov:usedEntity"] && !wdf["prov:generatedEntity"].includes("quality"))
         links.push(
           {
             source: wdf["prov:usedEntity"],
             target: wdf["prov:generatedEntity"],
             generated: provenanceOverlayModel.provenance.entity[wdf["prov:generatedEntity"]],
             value: 1/value,
-            depth: Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).indexOf(wdf)
+            depth: Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).indexOf(wdf),
+            activity: wdf["prov:activity"]
           });
     }
 
