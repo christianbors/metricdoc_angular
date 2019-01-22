@@ -130,74 +130,60 @@ export class RefineProvenanceExplorerComponent implements OnInit {
               // .attr("y", (d:any) => d.y0)
               .attr("height", (d:any) => d.y1 - d.y0)
               .attr("width", (d:any) => d.x1 - d.x0)
-              .attr("fill", (d:any) => 
-                d3.schemeCategory10[1]
-              )
-              // .each((data: any, idx: number, node:any) => {  
-              //   let activityId = data.key.substring(14);
-              //   let nodeHeight:number = data.y1 - data.y0;
-              //   let nodeWidth:number = data.x1 - data.x0;
+              .attr("fill", (d:any) => d3.schemeCategory10[1])
+              .each((data: any, idx: number, node:any) => {  
+                let activityId = data.key.substring(14);
+                let nodeHeight:number = data.y1 - data.y0;
+                let nodeWidth:number = data.x1 - data.x0;
 
+                Object.entries(this.provenanceOverlayModel.provenance.entity).filter((entity: any) => entity[0].includes('column:'));
+                let colMetrics:any = {};
+                let colNames:any[] = [];
+                let mNames:string[] = [];
+                Object.keys(cols).forEach((k:any) => {
+                  let qEntry = cols[k]["quality:"+activityId];
+                  if(qEntry) {
+                    colMetrics[k] = qEntry;
+                    // colNames.push({col: k);
+                    for(let m of qEntry) {
+                      colNames.push({col:k, metric: m.type});
+                      if(!mNames.includes(m.type))
+                        mNames.push(m.type);
+                    }
+                  }
+                })
+
+                let stack = stackMetric.keys(colNames)([colMetrics]);
+                let maxVal:any = d3.max(stack, (d:any) => { return d3.max(d, (row:any) => { return row[1] }) });
+                let scaleY = d3.scaleLinear().rangeRound([nodeHeight, 0]).domain([0, maxVal]);
+                let z = d3.scaleOrdinal(d3.schemeCategory10).domain(mNames);
                 
-              //   // Object.entries(this.provenanceOverlayModel.provenance.entity).filter((entity: any) => entity[0].includes('column:'));
-              //   let colMetrics:any = {};
-              //   let colNames:any[] = [];
-              //   let mNames:string[] = [];
-              //   Object.keys(cols).forEach((k:any) => {
-              //     let qEntry = cols[k]["quality:"+activityId];
-              //     if(qEntry) {
-              //       colMetrics[k] = qEntry;
-              //       // colNames.push({col: k);
-              //       for(let m of qEntry) {
-              //         colNames.push({col:k, metric: m.type});
-              //         if(!mNames.includes(m.type))
-              //           mNames.push(m.type);
-              //       }
-              //     }
-              //   })
+                d3.select(node[idx])
+                  // .select(".activity")
+                  // .enter().
+                  .append("rect")
+                    .attr("class", "activity")
+                    .attr("x", data.x0)
+                    .attr("y", data.y0)
+                    .attr("height", (data:any) =>
+                     { return data.y1 - data.y0 }
+                    )
+                    .attr("width", nodeWidth)
+                    .attr("fill", "black");
+                // old stacking of metrics
+                //   .data(stack)
+                // .enter().append("rect")
+                //   .attr("class", "metric")
+                //   .attr("stroke", "none")
+                //   .attr("transform", "translate(0," + data.y0 + ")")
+                //   .attr("fill", (d:any) => { return z(d.key.metric) })
+                //   .attr("x", data.x0)
+                //   .attr("y", (d:any) => { return scaleY(d[0][1]); })
+                //   .attr("height", (d:any) => { return scaleY(d[0][0]) - scaleY(d[0][1]); })
+                //   .attr("width", nodeWidth);
 
-              //   let stack = stackMetric.keys(colNames)([colMetrics]);
-              //   let maxVal:any = d3.max(stack, (d:any) => { return d3.max(d, (row:any) => { return row[1] }) });
-              //   let scaleY = d3.scaleLinear().rangeRound([nodeHeight, 0]).domain([0, maxVal]);
-              //   let z = d3.scaleOrdinal(d3.schemeCategory10).domain(mNames);
-                
-              //   d3.select(node[idx])
-              //     .selectAll(".metric")
-              //     .data(stack)
-              //   .enter().append("rect")
-              //     .attr("class", "metric")
-              //     .attr("stroke", "none")
-              //     // .attr("transform", (d:any, i:any) => {return "translate(" + nodeWidth*i + "," + data.y0 + ")"})
-              //     .attr("transform", "translate(0," + data.y0 + ")")
-              //     .attr("fill", (d:any) => { return z(d.key.metric) })
-              //   // .selectAll("rect")
-              //   // .data((d:any) => {return d})
-              //   // .enter().append("rect")
-              //     .attr("x", data.x0)
-              //     .attr("y", (d:any) => { 
-              //       return scaleY(d[0][1]); 
-              //     })
-              //     .attr("height", (d:any) => { return scaleY(d[0][0]) - scaleY(d[0][1]); })
-              //     .attr("width", nodeWidth);
-
-              //   // d3.select(node[idx])
-              //   //   .selectAll("g")
-              //   //   .data(cols)
-              //   // .enter().append("g")
-              //   //   .attr("class", (d:any) => d[0])
-              //   //   .each((d:any, idx:any, grp:any[]) => {
-                    
-              //   //     d3.select(grp[idx])
-              //   //       .selectAll("rect")
-              //   //       .data(st)
-              //   //       .enter().append("rect")
-              //   //       .attr("height", nodeHeight/grp.length)
-              //   //       .attr("width", nodeWidth-2)
-              //   //       .attr("stroke", "black")
-              //   //       .attr("stroke-width", 1);
-              //   //   });
-              //   let a = node.activity;
-              // })
+                let a = node.activity;
+              })
             .append("title")
               .text((d:any) => `${d.key}`);
             d3.select("svg.sankey").append("g")
@@ -211,7 +197,6 @@ export class RefineProvenanceExplorerComponent implements OnInit {
               .attr("dy", "0.35em")
               .attr("text-anchor", (d:any) => "start")
               .text((d:any) => d.entity["prov:label"]);
-            
             // d3.select("svg.sankey").append("g")
             //   .attr("class", "linksText")
             //   .style("font", "10px sans-serif")
