@@ -9,6 +9,8 @@
     "experimentalDecorators": true,
     "lib": [
       "es2016"
-    ]
+    ],
+    "module": "es2015",
+    "baseUrl": "./"
   }
 }

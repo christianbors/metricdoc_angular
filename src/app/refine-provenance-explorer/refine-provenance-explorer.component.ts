@@ -1,5 +1,6 @@
 import { Component, OnInit }                from '@angular/core';
 import { Router, ActivatedRoute, ParamMap } from '@angular/router';
+import { DomSanitizer }                     from '@angular/platform-browser';
 import { OpenRefineService }                from './../shared/open-refine/open-refine.service';
 import { OpenRefineProject }                from './../shared/open-refine/model/open-refine-project';
 import { ProjectMetadata }                  from './../shared/open-refine/model/project-metadata';
@@ -17,6 +18,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
   errorMessage: string;
   projectId: string;
+  refineProjectUrl;
   projectMetadata: ProjectMetadata;
   openRefineProject: OpenRefineProject;
   provenanceOverlayModel: any;
@@ -25,12 +27,14 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
   constructor(protected route: ActivatedRoute,
     protected router: Router,
-    protected openRefineService: OpenRefineService) {
+    protected openRefineService: OpenRefineService,
+    private domSanitizer : DomSanitizer) {
     this.d3Sankey = require("d3-sankey");
   }
 
   ngOnInit() { 
     this.projectId = this.route.snapshot.paramMap.get('projectId');
+    this.refineProjectUrl = this.domSanitizer.bypassSecurityTrustResourceUrl("http://localhost:3333/project?project=" + this.projectId);
 
     this.getOpenRefineProject();
     this.openRefineService.getProjectMetadata(this.projectId)
@@ -57,16 +61,16 @@ export class RefineProvenanceExplorerComponent implements OnInit {
             let sankeyDiag = this.d3Sankey.sankey()
               .nodeWidth(15)
               .nodePadding(10)
-              .extent([[1, 1], [1000, 600]])
+              .extent([[1, 1], [1000, 150]])
               .nodeAlign(this.d3Sankey.sankeyLeft);
 
             sankeyDiag.nodes(graph.nodes)
               .links(graph.links)
               .nodeId((node:any) => node.key);
 
-            sankeyDiag().nodes.forEach((node: any) => {
-              node.value = 1;
-            });
+            // sankeyDiag().nodes.forEach((node: any) => {
+            //   node.value = 1;
+            // });
 
             const link = d3.select("svg.sankey").append("g")
               .attr("fill", "none")
@@ -98,13 +102,23 @@ export class RefineProvenanceExplorerComponent implements OnInit {
             //   .key((d:any) => { return d[1]});
             
             let stackMetric = d3.stack()
-              .keys((d:any) => { return Object.entries(d.metrics) })
+              // .keys((d:any) => { return Object.keys(d.metrics) })
               .value((d:any, key:any) => {
-                let val:any[] = Object.values(d.metrics).filter((m: any) => {
-                  return m.type === key;
-                });
-                return val[0].$;
+                let val:number = 0;
+                for(let m of d[key.col])
+                  if(m.type == key.metric)
+                    return m.$;
+                // let val:any[] = Object.values(d.metrics).filter((m: any) => {
+                //   return m.type === key;
+                // });
+                return null;
               });
+
+            let cols:any = {};
+            for(let k of Object.keys(this.provenanceOverlayModel.provenance.entity)) {
+              if(k.includes("column:"))
+                cols[k] = this.provenanceOverlayModel.provenance.entity[k];
+            }
 
             d3.select("svg.sankey").append("g")
               .attr("stroke", "#000")
@@ -114,67 +128,76 @@ export class RefineProvenanceExplorerComponent implements OnInit {
               .attr("class", "history_nodes")
               // .attr("x", (d:any) => d.x0)
               // .attr("y", (d:any) => d.y0)
-              // .attr("height", (d:any) => d.y1 - d.y0)
-              // .attr("width", (d:any) => d.x1 - d.x0)
-              // .attr("fill", "none") //d3.schemeCategory10[0]
-              .each((data: any, idx: number, node:any) => {  
-                let activityId = data.key.substring(14);
-                let nodeHeight:number = data.y1 - data.y0;
-                let nodeWidth:number = data.x1 - data.x0;
+              .attr("height", (d:any) => d.y1 - d.y0)
+              .attr("width", (d:any) => d.x1 - d.x0)
+              .attr("fill", (d:any) => 
+                d3.schemeCategory10[1]
+              )
+              // .each((data: any, idx: number, node:any) => {  
+              //   let activityId = data.key.substring(14);
+              //   let nodeHeight:number = data.y1 - data.y0;
+              //   let nodeWidth:number = data.x1 - data.x0;
 
-                let cols:any[] = Object.entries(this.provenanceOverlayModel.provenance.entity).filter((entity: any) => entity[0].includes('column:'));
-                let colMetrics:any[] = [];
-                let mNames:string[] = [];
-                cols.forEach((v:any) => {
-                  let qEntry = v[1]["quality:"+activityId];
-                  if(qEntry) {
-                    colMetrics.push({column: v[0], metrics: qEntry});
-                    for(let m of qEntry) {
-                      if(!mNames.includes(m.type))
-                        mNames.push(m.type);
-                    }
-                  }
-                })
-
-                let stack = stackMetric.keys(mNames)(colMetrics); //.keys(colNames)
-                let maxVal:any = d3.max(stack, (d:any) => { return d3.max(d, (row:any) => { return row[1] }) });
-                let scaleY = d3.scaleLinear().rangeRound([nodeHeight, 0]).domain([0, maxVal]);
                 
-                d3.select(node[idx])
-                  .selectAll(".metric")
-                  .data(stack)
-                .enter().append("g")
-                  .attr("class", "metric")
-                  .attr("fill", "none")
-                  .attr("transform", "translate(0," + data.y0 + ")")
-                  // .attr("fill", (d:any) => { return z(d.type)})
-                .selectAll("rect")
-                .data((d:any) => {return d})
-                .enter().append("rect")
-                  .attr("x", data.x0)
-                  .attr("y", (d:any) => { return scaleY(d[1]); })
-                  .attr("height", (d:any) => { return scaleY(d[0]) - scaleY(d[1]); })
-                  .attr("width", nodeWidth);
+              //   // Object.entries(this.provenanceOverlayModel.provenance.entity).filter((entity: any) => entity[0].includes('column:'));
+              //   let colMetrics:any = {};
+              //   let colNames:any[] = [];
+              //   let mNames:string[] = [];
+              //   Object.keys(cols).forEach((k:any) => {
+              //     let qEntry = cols[k]["quality:"+activityId];
+              //     if(qEntry) {
+              //       colMetrics[k] = qEntry;
+              //       // colNames.push({col: k);
+              //       for(let m of qEntry) {
+              //         colNames.push({col:k, metric: m.type});
+              //         if(!mNames.includes(m.type))
+              //           mNames.push(m.type);
+              //       }
+              //     }
+              //   })
 
-                // d3.select(node[idx])
-                //   .selectAll("g")
-                //   .data(cols)
-                // .enter().append("g")
-                //   .attr("class", (d:any) => d[0])
-                //   .each((d:any, idx:any, grp:any[]) => {
+              //   let stack = stackMetric.keys(colNames)([colMetrics]);
+              //   let maxVal:any = d3.max(stack, (d:any) => { return d3.max(d, (row:any) => { return row[1] }) });
+              //   let scaleY = d3.scaleLinear().rangeRound([nodeHeight, 0]).domain([0, maxVal]);
+              //   let z = d3.scaleOrdinal(d3.schemeCategory10).domain(mNames);
+                
+              //   d3.select(node[idx])
+              //     .selectAll(".metric")
+              //     .data(stack)
+              //   .enter().append("rect")
+              //     .attr("class", "metric")
+              //     .attr("stroke", "none")
+              //     // .attr("transform", (d:any, i:any) => {return "translate(" + nodeWidth*i + "," + data.y0 + ")"})
+              //     .attr("transform", "translate(0," + data.y0 + ")")
+              //     .attr("fill", (d:any) => { return z(d.key.metric) })
+              //   // .selectAll("rect")
+              //   // .data((d:any) => {return d})
+              //   // .enter().append("rect")
+              //     .attr("x", data.x0)
+              //     .attr("y", (d:any) => { 
+              //       return scaleY(d[0][1]); 
+              //     })
+              //     .attr("height", (d:any) => { return scaleY(d[0][0]) - scaleY(d[0][1]); })
+              //     .attr("width", nodeWidth);
+
+              //   // d3.select(node[idx])
+              //   //   .selectAll("g")
+              //   //   .data(cols)
+              //   // .enter().append("g")
+              //   //   .attr("class", (d:any) => d[0])
+              //   //   .each((d:any, idx:any, grp:any[]) => {
                     
-                //     d3.select(grp[idx])
-                //       .selectAll("rect")
-                //       .data(st)
-                //       .enter().append("rect")
-                //       .attr("height", nodeHeight/grp.length)
-                //       .attr("width", nodeWidth-2)
-                //       .attr("stroke", "black")
-                //       .attr("stroke-width", 1);
-                //   });
-                let a = node.activity;
-
-              })
+              //   //     d3.select(grp[idx])
+              //   //       .selectAll("rect")
+              //   //       .data(st)
+              //   //       .enter().append("rect")
+              //   //       .attr("height", nodeHeight/grp.length)
+              //   //       .attr("width", nodeWidth-2)
+              //   //       .attr("stroke", "black")
+              //   //       .attr("stroke-width", 1);
+              //   //   });
+              //   let a = node.activity;
+              // })
             .append("title")
               .text((d:any) => `${d.key}`);
             d3.select("svg.sankey").append("g")
@@ -184,23 +207,23 @@ export class RefineProvenanceExplorerComponent implements OnInit {
             .data(sankeyDiag().nodes)
             .enter().append("text")
               .attr("x", (d:any) => d.x0)
-              .attr("y", (d:any) => d.y1 + 8)
+              .attr("y", (d:any) => d.y1 + 4)
               .attr("dy", "0.35em")
               .attr("text-anchor", (d:any) => "start")
               .text((d:any) => d.entity["prov:label"]);
             
-            d3.select("svg.sankey").append("g")
-              .attr("class", "linksText")
-              .style("font", "10px sans-serif")
-            .selectAll("text")
-            .data(sankeyDiag().links)
-            .enter().append("text")
-              .attr("x", (d:any) => 
-                (d.source.x1 + d.target.x1)/2)
-              .attr("y", (d:any) => (d.y0 + d.y1)/2)
-              .attr("dy", "0.35em")
-              .attr("text-anchor", (d:any) => "start")
-              .text((d:any) => d.value);
+            // d3.select("svg.sankey").append("g")
+            //   .attr("class", "linksText")
+            //   .style("font", "10px sans-serif")
+            // .selectAll("text")
+            // .data(sankeyDiag().links)
+            // .enter().append("text")
+            //   .attr("x", (d:any) => 
+            //     (d.source.x1 + d.target.x1)/2)
+            //   .attr("y", (d:any) => (d.y0 + d.y1)/2)
+            //   .attr("dy", "0.35em")
+            //   .attr("text-anchor", (d:any) => "start")
+            //   .text((d:any) => d.value);
           }
         },
         error => this.errorMessage = <any>error
@@ -240,19 +263,33 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
     // let columns:any[] = Object.entries(provenanceOverlayModel.provenance.entity).filter((entity: any) => entity[0].includes('column:'));
 
+    let maxVal = 0;
     for (let wdf of Object.values(provenanceOverlayModel.provenance.wasDerivedFrom)) {
-      let value = Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).filter((wdf_filter: any) => wdf_filter["prov:usedEntity"]===wdf["prov:usedEntity"]).length;
+      let value = Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).filter((wdf_filter: any) => wdf_filter["prov:usedEntity"] === wdf["prov:usedEntity"]).length;
+      let endValue = Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).filter((wdf_filter: any) => wdf_filter["prov:usedEntity"] === wdf["prov:generatedEntity"]).length;
+      if (endValue == 0)
+        value = 1;
+      // else if (value.length > 1)
+      //   value = [0];
+      if(maxVal < value)
+        maxVal = value;
+
+      // console.log(wdf["prov:generatedEntity"] + ": " + value + ", " + value2);
       let metrics: any[];
-      if(wdf["prov:usedEntity"] && !wdf["prov:generatedEntity"].includes("quality"))
+      if(wdf["prov:usedEntity"] && !wdf["prov:generatedEntity"].includes("quality")) {
         links.push(
           {
             source: wdf["prov:usedEntity"],
             target: wdf["prov:generatedEntity"],
             generated: provenanceOverlayModel.provenance.entity[wdf["prov:generatedEntity"]],
+            out: null,
+            in: null,
             value: 1/value,
             depth: Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).indexOf(wdf),
             activity: wdf["prov:activity"]
           });
+        console.log(1/value);
+      }
     }
 
     // for (let wgb of Object.keys(provenanceOverlayModel.provenance.wasGeneratedBy)) {
@@ -264,9 +301,11 @@ export class RefineProvenanceExplorerComponent implements OnInit {
     // }
     let nodes:any[] = [];
     for (let entry of nodeEntries) {
-      nodes.push({key: entry[0], value: 1, entity: entry[1], depth: entry[1].depth});
+      nodes.push({key: entry[0], value: 10, entity: entry[1], depth: entry[1].depth});
     }
-
+    for (let link of links) {
+      link.value = link.value*maxVal;
+    }
 
     let graph = {
       nodes: nodes,
