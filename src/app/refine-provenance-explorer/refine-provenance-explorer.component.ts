@@ -45,7 +45,9 @@ export class RefineProvenanceExplorerComponent implements OnInit {
     "ColumnAdditionByFetchingURLsOperation": "fa-folder-plus",
     "ColumnReorderOperation": "fa-columns",
     "RowRemovalOperation": "fa-bars",
-    "RowStarOperation": "fa-stafa-flag",
+    "RowStarOperation": "fa-star",
+    "RowFlagOperation": "fa-flag",
+    "RowFlagChange": "fa-flag",
     "RowReorderOperation": "fa-buromobelexperte",
     "ReconOperation": "fa-buromobelexperte",
     "ReconMarkNewTopicsOperation": "fa-thumbtack",
@@ -103,7 +105,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
             let sankeyDiag = d3Sankey.sankey()
               .nodeWidth(nodeWidth)
               .nodePadding(nodePadding)
-              .extent([[1, 1], [1000, 250]])
+              .extent([[1, 1], [920, 250]])
               .nodeAlign(d3Sankey.sankeyLeft);
 
             sankeyDiag.nodes(graph.nodes)
@@ -124,7 +126,10 @@ export class RefineProvenanceExplorerComponent implements OnInit {
               .style("opacity", 0);
 
             link.append("path")
-                .attr("d", (d:any) => { return this.linkSkewed(d) })
+                .attr("d", (d:any) => this.linkSkewed(d))
+                .attr("id", (d:any) => { 
+                  return "activity" + d.activity.replace("change:","");
+                })
                 // .attr("stroke", d => "grey")
                 .attr("fill", d => "grey")
                 .attr("fill-opacity", 0.25)
@@ -163,7 +168,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                 
                 d3.select(node[idx])
                   .append("rect")
-                    .attr("class", "activity")
+                    .attr("id", "activity" + activityId)
                     .attr("x", data.x0)
                     .attr("y", data.y0)
                     .attr("height", data.y1 - data.y0)
@@ -184,7 +189,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .attr('font-size', iconHeight + 'px')
                   .attr('stroke', 'none')
                   // .html('<i class="fa fa-money-bill"></i>');
-                  .html('<i class="fa ' + this.operationIconCodes[data.entity["prov:label"]] + '"></i>'); //fa-money-bill
+                  .html('<i class="fa ' + this.operationIconCodes[data.entity["prov:label"]] + '"><title>' + data.entity["prov:label"] + '</title></i>'); //fa-money-bill
                   // .text(this.operationIconCodes[data.entity["prov:label"]]);
 
                 let a = node.activity;
@@ -193,7 +198,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                 div.transition()
                   .duration(100)
                   .style("opacity", .9);
-                div.html(data.entity["prov:label"] + "<br/>")
+                div.html(data.entity["prov:value"]["$"])
                   .style("left", (d3.event.pageX) + "px")
                   .style("top", (d3.event.pageY - 28) + "px");
                 })
@@ -202,6 +207,20 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .duration(100)
                   .style("opacity", 0);
               });
+
+            this.openRefineService.getHistory(this.projectId)
+              .subscribe((history: any) => {
+                for (let pastEntry of history.past) {
+                  d3.select("svg.sankey").select("rect#activity" + pastEntry.id)
+                    .attr('stroke', 'gray')
+                    .attr('stroke-width', '2px');
+                  d3.select("svg.sankey").select("path#activity" + pastEntry.id)
+                    .attr("fill", "#a2b9bc")
+                    .attr('stroke', 'gray')
+                    .attr("fill-opacity", 0.85)
+                    .attr('stroke-width', '2px');
+                }
+              })
           }
         },
         error => this.errorMessage = <any>error

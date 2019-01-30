@@ -130,6 +130,12 @@ export class OpenRefineService {
   		.catch(this.handleError);
   }
 
+  getHistory (projectId: any) {
+    return this.http.get(this.openRefineServerUrl + 'core/get-history', { search: this.initializeParams(projectId) })
+      .map(this.extractData)
+      .catch(this.handleError);
+  }
+
   getRows (projectId: any, first: any, limit: any) {
     let params = this.initializeParams(projectId);
   	params.set('start', first);
