@@ -30,7 +30,6 @@ import { OpenDataProvenanceVisComponent } from './open-data-prov/provenance-vis/
 import { RefineProvenanceComponent } from './refine-provenance/refine-provenance.component';
 import { ProvenanceProjectListPipe, NonProvenanceProjectListPipe } from './refine-provenance/provenance-project-list.pipe';
 import { RefineProvenanceExplorerComponent } from './refine-provenance-explorer/refine-provenance-explorer.component';
-import { Angular2FontawesomeModule } from 'angular2-fontawesome/angular2-fontawesome';
 
 const appRoutes: Routes = [
   {
@@ -140,8 +139,7 @@ const appRoutes: Routes = [
     JsonpModule,
     ContextMenuModule.forRoot({
       useBootstrap4: true,
-    }),
-    Angular2FontawesomeModule
+    })
   ],
   providers: [],
   bootstrap: [ AppComponent ]

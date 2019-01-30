@@ -1,4 +1,4 @@
-import { Component, OnInit }                from '@angular/core';
+import { Component, OnInit, ViewEncapsulation }                from '@angular/core';
 import { Router, ActivatedRoute, ParamMap } from '@angular/router';
 import { DomSanitizer }                     from '@angular/platform-browser';
 import { OpenRefineService }                from './../shared/open-refine/open-refine.service';
@@ -12,8 +12,9 @@ import * as d3Sankey from './d3-sankey.js';
 @Component({
   selector: 'app-refine-provenance-explorer',
   templateUrl: './refine-provenance-explorer.component.html',
-  styleUrls: ['./refine-provenance-explorer.component.sass'],
-  providers: [ OpenRefineService ]
+  styleUrls: ['./refine-provenance-explorer.component.scss'],
+  providers: [ OpenRefineService ],
+  encapsulation: ViewEncapsulation.None
 })
 export class RefineProvenanceExplorerComponent implements OnInit {
 
@@ -27,35 +28,35 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   d3Sankey;
 
   operationIconCodes: any = {
-    "TextTransformOperation": "\uf121",
-    "MassEditOperation": "\uf044",
-    "MultiValuedCellJoinOperation": "\uf066",
-    "MultiValuedCellSplitOperation": "\uf065",
-    "FillDownOperation": "\uf044",
-    "BlankDownOperation": "\uf044",
-    "TransposeColumnsIntoRowsOperation": "\uf101",
-    "TransposeRowsIntoColumnsOperation": "\uf103",
-    "KeyValueColumnizeOperation": "\uf084",
-    "ColumnAdditionOperation": "\uf65e",
-    "ColumnRemovalOperation": "\uf0db",
-    "ColumnRenameOperation": "\uf07b",
-    "ColumnMoveOperation": "\uf2f6",
-    "ColumnSplitOperation": "\uf0db",
-    "ColumnAdditionByFetchingURLsOperation": "\uf65e",
-    "ColumnReorderOperation": "\uf0db",
-    "RowRemovalOperation": "\uf0c9",
-    "RowStarOperation": "\uf005",
-    "RowFlagOperation": "\uf024",
-    "RowReorderOperation": "\uf37f",
-    "ReconOperation": "\uf37f",
-    "ReconMarkNewTopicsOperation": "\uf08d",
-    "ReconMatchBestCandidatesOperation": "\uf24d",
-    "ReconDiscardJudgmentsOperation": "\uf0e7",
-    "ReconMatchSpecificTopicOperation": "\uf37f",
-    "ReconJudgeSimilarCellsOperation": "\uf37f",
-    "ReconClearSimilarCellsOperation": "\uf37f",
-    "ReconCopyAcrossColumnsOperation": "\uf37f",
-    "ExtendDataOperation": "\uf35d",
+    "TextTransformOperation": "fa-code",//\uf121",
+    "MassEditOperation": "fa-edit",//\uf044",
+    "MultiValuedCellJoinOperation": "fa-compress",//\uf066",
+    "MultiValuedCellSplitOperation": "fa-expand",// "\uf065",
+    "FillDownOperation": "fa-edit",//"\uf044",
+    "BlankDownOperation": "fa-edit",//"\uf044",
+    "TransposeColumnsIntoRowsOperation": "fa-angle-double-right",// "\uf101",
+    "TransposeRowsIntoColumnsOperation": "fa-angle-double-down",// "\uf103",
+    "KeyValueColumnizeOperation": "fa-key", //\uf084",
+    "ColumnAdditionOperation": "fa-folder-plus",// "\uf65e",
+    "ColumnRemovalOperation": "fa-columns", //"\uf0db",
+    "ColumnRenameOperation": "fa-folder",
+    "ColumnMoveOperation": "fa-sign-in-alt",
+    "ColumnSplitOperation": "fa-columns",
+    "ColumnAdditionByFetchingURLsOperation": "fa-folder-plus",
+    "ColumnReorderOperation": "fa-columns",
+    "RowRemovalOperation": "fa-bars",
+    "RowStarOperation": "fa-stafa-flag",
+    "RowReorderOperation": "fa-buromobelexperte",
+    "ReconOperation": "fa-buromobelexperte",
+    "ReconMarkNewTopicsOperation": "fa-thumbtack",
+    "ReconMatchBestCandidatesOperation": "fa-clone",
+    "ReconDiscardJudgmentsOperation": "fa-bolt",
+    "ReconMatchSpecificTopicOperation": "fa-buromobelexperte",
+    "ReconJudgeSimilarCellsOperation": "fa-buromobelexperte",
+    "ReconClearSimilarCellsOperation": "fa-buromobelexperte",
+    "ReconCopyAcrossColumnsOperation": "fa-buromobelexperte",
+    "ExtendDataOperation": "fa-external-link-alt",
+    "MetricsExtensionOperation": "fa-external-link-alt"
   };
 
   constructor(protected route: ActivatedRoute,
@@ -116,6 +117,12 @@ export class RefineProvenanceExplorerComponent implements OnInit {
             .data(sankeyDiag().links)
             .enter().append("g");
 
+            // Define the div for the tooltip
+            var div = d3.select("body").append("div")
+              .attr("class", "d3tooltip")
+              // .attr("[ngStyle]", "tooltip")
+              .style("opacity", 0);
+
             link.append("path")
                 .attr("d", (d:any) => { return this.linkSkewed(d) })
                 // .attr("stroke", d => "grey")
@@ -149,7 +156,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
               .attr("class", "history_nodes")
               .attr("height", (d:any) => d.y1 - d.y0)
               .attr("width", (d:any) => d.x1 - d.x0)
-              .each((data: any, idx: number, node:any) => {  
+              .each((data: any, idx: number, node:any) => {
                 let activityId = data.key.substring(14);
                 let nodeHeight:number = data.y1 - data.y0;
                 let nodeWidth:number = data.x1 - data.x0;
@@ -167,30 +174,34 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                       return scale(col);
                     });
                 d3.select(node[idx])
-                  // .append("i")
-                  //   .attr("class", function(d){ 
-                  //     return "icon fa fa-5x fa-twitter-square";
-                  //   })
-                  .append('text')
-                  .attr("x", (d:any) => d.x0 + nodeWidth/2)
-                  .attr("y", (d:any) => d.y1 + nodePadding/2)
+                  .append('svg:foreignObject')
+                  .attr('x', (d:any) => d.x0)
+                  .attr('y', (d:any) => d.y1)
                   .attr('text-anchor', 'middle')
                   .attr('dominant-baseline', 'central')
-                  .attr('font-family', 'FontAwesome')
+                  .attr('font-family', 'Font Awesome 5 Free')
+                  .attr('font-weight', 900)
                   .attr('font-size', iconHeight + 'px')
-                  .attr("stroke", "none")
-                  .text(this.operationIconCodes[data.entity["prov:label"]]);//[activityId]);
+                  .attr('stroke', 'none')
+                  // .html('<i class="fa fa-money-bill"></i>');
+                  .html('<i class="fa ' + this.operationIconCodes[data.entity["prov:label"]] + '"></i>'); //fa-money-bill
+                  // .text(this.operationIconCodes[data.entity["prov:label"]]);
 
-                  // .append("text")
-                  //   .attr("x", (d:any) => d.x0)
-                  //   .attr("y", (d:any) => d.y1 + (iconHeight/2))
-                  //   .attr("dx", (iconHeight/16) + 'em')
-                  //   .attr("text-anchor", (d:any) => "start")
-                  //   .attr('font-size', (iconHeight/16) + 'em')
-                  //   .attr('font-family', 'Font Awesome 5 Free')
-                  //   .text("\uf5c1");//(d:any) => d.entity["prov:label"]);
                 let a = node.activity;
               })
+              .on("mouseover", (data:any) => {
+                div.transition()
+                  .duration(100)
+                  .style("opacity", .9);
+                div.html(data.entity["prov:label"] + "<br/>")
+                  .style("left", (d3.event.pageX) + "px")
+                  .style("top", (d3.event.pageY - 28) + "px");
+                })
+              .on("mouseout", function(d) {
+                div.transition()
+                  .duration(100)
+                  .style("opacity", 0);
+              });
           }
         },
         error => this.errorMessage = <any>error
