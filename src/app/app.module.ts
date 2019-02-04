@@ -30,6 +30,7 @@ import { OpenDataProvenanceVisComponent } from './open-data-prov/provenance-vis/
 import { RefineProvenanceComponent } from './refine-provenance/refine-provenance.component';
 import { ProvenanceProjectListPipe, NonProvenanceProjectListPipe } from './refine-provenance/provenance-project-list.pipe';
 import { RefineProvenanceExplorerComponent } from './refine-provenance-explorer/refine-provenance-explorer.component';
+import { QualityProvenanceVisComponent } from './refine-provenance-explorer/quality-provenance-vis/quality-provenance-vis.component';
 
 const appRoutes: Routes = [
   {
@@ -125,7 +126,8 @@ const appRoutes: Routes = [
     RefineProvenanceComponent, 
     ProvenanceProjectListPipe,
     NonProvenanceProjectListPipe,
-    RefineProvenanceExplorerComponent
+    RefineProvenanceExplorerComponent,
+    QualityProvenanceVisComponent
   ],
   imports: [
     RouterModule.forRoot(appRoutes, { enableTracing: true }),

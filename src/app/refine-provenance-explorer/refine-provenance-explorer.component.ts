@@ -1,13 +1,14 @@
-import { Component, OnInit, ViewEncapsulation }                from '@angular/core';
-import { Router, ActivatedRoute, ParamMap } from '@angular/router';
-import { DomSanitizer }                     from '@angular/platform-browser';
-import { OpenRefineService }                from './../shared/open-refine/open-refine.service';
-import { OpenRefineProject }                from './../shared/open-refine/model/open-refine-project';
-import { ProjectMetadata }                  from './../shared/open-refine/model/project-metadata';
-import { ProvenanceOverlayModel }           from './../refine-provenance/model/provenance-overlay-model';
+import { Component, OnInit, Input, ViewEncapsulation, ElementRef, ViewChild } from '@angular/core';
+import { Router, ActivatedRoute, ParamMap }     from '@angular/router';
+import { DomSanitizer }                         from '@angular/platform-browser';
+import { OpenRefineService }                    from './../shared/open-refine/open-refine.service';
+import { OpenRefineProject }                    from './../shared/open-refine/model/open-refine-project';
+import { ProjectMetadata }                      from './../shared/open-refine/model/project-metadata';
+import { ProvenanceOverlayModel }               from './../refine-provenance/model/provenance-overlay-model';
 
 import * as d3 from 'd3';
 import * as d3Sankey from './d3-sankey.js';
+import * as iconCodes from './icon-codes.json';
 
 @Component({
   selector: 'app-refine-provenance-explorer',
@@ -25,61 +26,27 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   openRefineProject: OpenRefineProject;
   provenanceOverlayModel: any;
 
-  d3Sankey;
+  pageWidth: number = 100;
+  detailHeight: number = 40;
+  sankeyHeight: number = 25;
+  refineHeight: number = 35;
 
-  operationIconCodes: any = {
-    "TextTransformOperation": "fa-code",//\uf121",
-    "MassEditOperation": "fa-edit",//\uf044",
-    "MultiValuedCellJoinOperation": "fa-compress",//\uf066",
-    "MultiValuedCellSplitOperation": "fa-expand",// "\uf065",
-    "FillDownOperation": "fa-edit",//"\uf044",
-    "BlankDownOperation": "fa-edit",//"\uf044",
-    "TransposeColumnsIntoRowsOperation": "fa-angle-double-right",// "\uf101",
-    "TransposeRowsIntoColumnsOperation": "fa-angle-double-down",// "\uf103",
-    "KeyValueColumnizeOperation": "fa-key", //\uf084",
-    "ColumnAdditionOperation": "fa-folder-plus",// "\uf65e",
-    "ColumnRemovalOperation": "fa-columns", //"\uf0db",
-    "ColumnRenameOperation": "fa-folder",
-    "ColumnMoveOperation": "fa-sign-in-alt",
-    "ColumnSplitOperation": "fa-columns",
-    "ColumnAdditionByFetchingURLsOperation": "fa-folder-plus",
-    "ColumnReorderOperation": "fa-columns",
-    "RowRemovalOperation": "fa-bars",
-    "RowStarOperation": "fa-star",
-    "RowFlagOperation": "fa-flag",
-    "RowFlagChange": "fa-flag",
-    "RowReorderOperation": "fa-buromobelexperte",
-    "ReconOperation": "fa-buromobelexperte",
-    "ReconMarkNewTopicsOperation": "fa-thumbtack",
-    "ReconMatchBestCandidatesOperation": "fa-clone",
-    "ReconDiscardJudgmentsOperation": "fa-bolt",
-    "ReconMatchSpecificTopicOperation": "fa-buromobelexperte",
-    "ReconJudgeSimilarCellsOperation": "fa-buromobelexperte",
-    "ReconClearSimilarCellsOperation": "fa-buromobelexperte",
-    "ReconCopyAcrossColumnsOperation": "fa-buromobelexperte",
-    "ExtendDataOperation": "fa-external-link-alt",
-    "MetricsExtensionOperation": "fa-external-link-alt"
-  };
+  @ViewChild('provGraph')
+  elHeight:ElementRef;
+
+  d3Sankey;
 
   constructor(protected route: ActivatedRoute,
     protected router: Router,
     protected openRefineService: OpenRefineService,
     private domSanitizer : DomSanitizer) {
-    // TODO old way of loading sankey
-    // this.d3Sankey = require("d3-sankey");
-    // delete this.d3Sankey['computeNodeValues'];
-
-    // this.d3Sankey.computeNodeValues = function(graph) {
-    //   console.log("override");
-    // };
-    // module.exports = this.d3Sankey;
   }
 
-  ngOnInit() { 
+  ngOnInit() {
     this.projectId = this.route.snapshot.paramMap.get('projectId');
-    this.refineProjectUrl = this.domSanitizer.bypassSecurityTrustResourceUrl("http://localhost:3333/project?project=" + this.projectId);
-
     this.getOpenRefineProject();
+
+    this.refineProjectUrl = this.domSanitizer.bypassSecurityTrustResourceUrl("http://localhost:3333/project?project=" + this.projectId);
     this.openRefineService.getProjectMetadata(this.projectId)
       .subscribe(
         projectMetadata => this.projectMetadata = projectMetadata,
@@ -105,14 +72,14 @@ export class RefineProvenanceExplorerComponent implements OnInit {
             let sankeyDiag = d3Sankey.sankey()
               .nodeWidth(nodeWidth)
               .nodePadding(nodePadding)
-              .extent([[1, 1], [920, 250]])
+              .extent([[1, 1], [this.elHeight.nativeElement.scrollWidth, this.elHeight.nativeElement.scrollHeight - (iconHeight + nodePadding)]])
               .nodeAlign(d3Sankey.sankeyLeft);
 
             sankeyDiag.nodes(graph.nodes)
               .links(graph.links)
               .nodeId((node:any) => node.key);
 
-            const link = d3.select("svg.sankey").append("g")
+            const link = d3.select("svg.provGraph").append("g")
               .attr("fill", "none")
               .attr("stroke-opacity", 0.25)
             .selectAll("g")
@@ -145,7 +112,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                 ops.push(n.entity["prov:label"]);
             });
             let sankeyColorScale = d3.scaleSequential(d3.interpolateViridis);
-            let scale = d3.scaleOrdinal(d3.schemeCategory10).domain(ops)
+            let scale = d3.scaleOrdinal(d3.schemeCategory10).domain(ops);
 
             let cols:any = {};
             for(let k of Object.keys(this.provenanceOverlayModel.provenance.entity)) {
@@ -153,7 +120,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                 cols[k] = this.provenanceOverlayModel.provenance.entity[k];
             }
 
-            d3.select("svg.sankey").append("g")
+            d3.select("svg.provGraph").append("g")
               .attr("stroke", "#000")
             .selectAll(".history_nodes")
             .data(sankeyDiag().nodes)
@@ -165,7 +132,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                 let activityId = data.key.substring(14);
                 let nodeHeight:number = data.y1 - data.y0;
                 let nodeWidth:number = data.x1 - data.x0;
-                
+
                 d3.select(node[idx])
                   .append("rect")
                     .attr("id", "activity" + activityId)
@@ -188,9 +155,8 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .attr('font-weight', 900)
                   .attr('font-size', iconHeight + 'px')
                   .attr('stroke', 'none')
-                  // .html('<i class="fa fa-money-bill"></i>');
-                  .html('<i class="fa ' + this.operationIconCodes[data.entity["prov:label"]] + '"><title>' + data.entity["prov:label"] + '</title></i>'); //fa-money-bill
-                  // .text(this.operationIconCodes[data.entity["prov:label"]]);
+                  .html('<i class="fa ' + iconCodes.default[data.entity["prov:label"]] + '">');
+                  //<title>' + data.entity["prov:label"] + '</title></i>'); //fa-money-bill
 
                 let a = node.activity;
               })
@@ -211,10 +177,10 @@ export class RefineProvenanceExplorerComponent implements OnInit {
             this.openRefineService.getHistory(this.projectId)
               .subscribe((history: any) => {
                 for (let pastEntry of history.past) {
-                  d3.select("svg.sankey").select("rect#activity" + pastEntry.id)
+                  d3.select("svg.provGraph").select("rect#activity" + pastEntry.id)
                     .attr('stroke', 'gray')
                     .attr('stroke-width', '2px');
-                  d3.select("svg.sankey").select("path#activity" + pastEntry.id)
+                  d3.select("svg.provGraph").select("path#activity" + pastEntry.id)
                     .attr("fill", "#a2b9bc")
                     .attr('stroke', 'gray')
                     .attr("fill-opacity", 0.85)

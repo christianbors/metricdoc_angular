@@ -1,5 +1,8 @@
-<p *ngIf="provenance">
-  {{provenanceString}}
-</p>
-<svg class="sankey" [style.width.px]="1100" [style.height.px]="400"></svg>
-<iframe width="100%" height="250" [src]="refineProjectUrl"></iframe>
+<app-quality-provenance-vis #qualityProvenanceVis 
+  [pageWidth]="pageWidth" 
+  [componentHeight]="detailHeight"
+  [openRefineService]="openRefineService"
+  [projectId]="projectId"></app-quality-provenance-vis>
+<svg #provGraph class="provGraph" [style.width.%]="pageWidth" [style.height.%]="sankeyHeight"></svg>
+<iframe [style.width.%]="pageWidth" [style.height.%]="refineHeight" [src]="refineProjectUrl"></iframe>
+ <!-- (window:resize)="onResize(svg.getBoundingClientRect())" -->
