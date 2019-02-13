@@ -22,6 +22,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   errorMessage: string;
   projectId: string;
   refineProjectUrl;
+  histId: any;
   projectMetadata: ProjectMetadata;
   openRefineProject: OpenRefineProject;
   provenanceOverlayModel: any;
@@ -67,6 +68,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
           if(this.provenanceOverlayModel) {
             let graph = this.buildGraph(this.provenanceOverlayModel);
+            this.histId = this.provenanceOverlayModel.currentHistoryEntry.localPart;
 
             // let sankeyDiag = this.d3Sankey.computeNodeValues();
             let sankeyDiag = d3Sankey.sankey()
@@ -168,10 +170,13 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .style("left", (d3.event.pageX) + "px")
                   .style("top", (d3.event.pageY - 28) + "px");
                 })
-              .on("mouseout", function(d) {
+              .on("mouseout", (d:any) => {
                 div.transition()
                   .duration(100)
                   .style("opacity", 0);
+              })
+              .on("click", (data:any) => {
+                this.histId = data.key.replace("history_entry:", "");
               });
 
             this.openRefineService.getHistory(this.projectId)

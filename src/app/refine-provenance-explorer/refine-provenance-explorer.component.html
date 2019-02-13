@@ -2,7 +2,8 @@
   [pageWidth]="pageWidth" 
   [componentHeight]="detailHeight"
   [openRefineService]="openRefineService"
-  [projectId]="projectId"></app-quality-provenance-vis>
+  [projectId]="projectId"
+  [histId]="histId"></app-quality-provenance-vis>
 <svg #provGraph class="provGraph" [style.width.%]="pageWidth" [style.height.%]="sankeyHeight"></svg>
 <iframe [style.width.%]="pageWidth" [style.height.%]="refineHeight" [src]="refineProjectUrl"></iframe>
  <!-- (window:resize)="onResize(svg.getBoundingClientRect())" -->
