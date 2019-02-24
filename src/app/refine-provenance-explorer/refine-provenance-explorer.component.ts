@@ -6,9 +6,9 @@ import { OpenRefineProject }                    from './../shared/open-refine/mo
 import { ProjectMetadata }                      from './../shared/open-refine/model/project-metadata';
 import { ProvenanceOverlayModel }               from './../refine-provenance/model/provenance-overlay-model';
 
-import * as d3 from 'd3';
-import * as d3Sankey from './d3-sankey.js';
-import * as iconCodes from './icon-codes.json';
+import * as d3         from 'd3';
+import * as d3Sankey   from './d3-sankey.js';
+import * as iconCodes  from './icon-codes.json';
 
 @Component({
   selector: 'app-refine-provenance-explorer',
@@ -23,9 +23,11 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   projectId: string;
   refineProjectUrl;
   histId: any;
+  nodeHistory: any[];
   projectMetadata: ProjectMetadata;
   openRefineProject: OpenRefineProject;
   provenanceOverlayModel: any;
+  loadFinished: boolean = false;
 
   pageWidth: number = 100;
   detailHeight: number = 40;
@@ -131,7 +133,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
               .attr("height", (d:any) => d.y1 - d.y0)
               .attr("width", (d:any) => d.x1 - d.x0)
               .each((data: any, idx: number, node:any) => {
-                let activityId = data.key.substring(14);
+                let activityId = data.key.replace("history_entry:", "");
                 let nodeHeight:number = data.y1 - data.y0;
                 let nodeWidth:number = data.x1 - data.x0;
 
@@ -156,8 +158,9 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .attr('font-family', 'Font Awesome 5 Free')
                   .attr('font-weight', 900)
                   .attr('font-size', iconHeight + 'px')
-                  .attr('stroke', 'none')
-                  .html('<i class="fa ' + iconCodes.default[data.entity["prov:label"]] + '">');
+                  // .attr('fill', 'black')
+                  // .attr('stroke', 'none')
+                  .html('<i class="fa fa-1x ' + iconCodes.default[data.entity["prov:label"]] + '">');
                   //<title>' + data.entity["prov:label"] + '</title></i>'); //fa-money-bill
 
                 let a = node.activity;
@@ -175,22 +178,22 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .duration(100)
                   .style("opacity", 0);
               })
-              .on("click", (data:any) => {
+              .on("click", (data:any, index:number, entries:any[]) => {
                 this.histId = data.key.replace("history_entry:", "");
+                this.determineNodeHistory(this.histId);
               });
 
             this.openRefineService.getHistory(this.projectId)
               .subscribe((history: any) => {
+                this.nodeHistory = [];
                 for (let pastEntry of history.past) {
+                  this.nodeHistory.push({ id: pastEntry.id, value: this.provenanceOverlayModel.provenance.entity["history_entry:" + pastEntry.id] });
                   d3.select("svg.provGraph").select("rect#activity" + pastEntry.id)
-                    .attr('stroke', 'gray')
-                    .attr('stroke-width', '2px');
+                    .classed("selected", true);
                   d3.select("svg.provGraph").select("path#activity" + pastEntry.id)
-                    .attr("fill", "#a2b9bc")
-                    .attr('stroke', 'gray')
-                    .attr("fill-opacity", 0.85)
-                    .attr('stroke-width', '2px');
+                    .classed("selected", true);
                 }
+                this.loadFinished = true;
               })
           }
         },
@@ -310,4 +313,37 @@ export class RefineProvenanceExplorerComponent implements OnInit {
          + "L" + x0 + "," + y0;
   }
 
+  determineNodeHistory(historyId: any):void {
+    // let histories = Object.entries(this.provenanceOverlayModel.provenance.entity).filter((entity: any) => { if (entity[0].includes("history_entry:")) return entity; });
+    this.nodeHistory = [];
+    let parent = "history_entry:" + this.histId;
+    while (parent) {
+      this.nodeHistory.splice(0, 0, { id: parent.replace("history_entry:", ""), value: this.provenanceOverlayModel.provenance.entity[parent] });
+      let wdfParent = Object.values(this.provenanceOverlayModel.provenance.wasDerivedFrom).find((wdf: any) => {
+        return wdf["prov:generatedEntity"] == parent;
+      });
+      if (!wdfParent["prov:usedEntity"])
+        parent = null;
+      parent = wdfParent["prov:usedEntity"];
+      // nodeHistory.push(this.provenanceOverlayModel.provenance.entity[parent["prov:generatedEntity"]]);
+    }
+    d3.select("svg.provGraph").selectAll("rect")
+      .classed("selected", false);
+    d3.select("svg.provGraph").selectAll("path")
+      .classed("selected", false)
+
+    for (let node of this.nodeHistory) {
+      let idString = node.id.replace("history_entry:", "");
+      d3.select("svg.provGraph").select("rect#activity" + idString)
+        .classed("selected", true);
+        // .attr('stroke', 'gray')
+        // .attr('stroke-width', '2px');
+      d3.select("svg.provGraph").select("path#activity" + idString)
+        .classed("selected", true);
+        // .attr("fill", "#a2b9bc")
+        // .attr('stroke', 'gray')
+        // .attr("fill-opacity", 0.85)
+        // .attr('stroke-width', '2px');
+    }
+  }
 }

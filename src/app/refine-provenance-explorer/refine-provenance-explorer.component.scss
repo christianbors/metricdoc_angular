@@ -10,3 +10,15 @@ div.d3tooltip {
     border-radius: 8px;
     pointer-events: none;
 }
+
+rect.selected {
+    stroke: gray;
+    stroke-width: 2px;
+}
+
+path.selected {
+    fill: #a2b9bc;
+    stroke: gray;
+    fill-opacity: 0.85;
+    stroke-width: 2px;
+}
