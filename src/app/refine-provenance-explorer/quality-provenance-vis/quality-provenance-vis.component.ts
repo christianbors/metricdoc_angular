@@ -48,7 +48,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges) {
     //changes.nodeHistory && changes.histId && 
     if (this.provenanceOverlayModel && changes.loadFinished) {
-      if (changes.loadFinished.currentValue === true) {
+      if (changes.loadFinished.currentValue == true) {
         let historyArray = this.nodeHistory.map(hist => hist.id);
         this.scaleByHistory = d3.scaleBand().domain(historyArray).range([15, parseFloat(this.svgDetailView.nativeElement.scrollWidth) - 15]).padding(0.05);
         

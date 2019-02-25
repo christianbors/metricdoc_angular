@@ -156,11 +156,14 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .attr('text-anchor', 'middle')
                   .attr('dominant-baseline', 'central')
                   .attr('font-family', 'Font Awesome 5 Free')
+                  .attr('fill', 'black')
                   .attr('font-weight', 900)
                   .attr('font-size', iconHeight + 'px')
+                  .attr('height', '100%')
+                  .attr('width', '100%')
                   // .attr('fill', 'black')
                   // .attr('stroke', 'none')
-                  .html('<i class="fa fa-1x ' + iconCodes.default[data.entity["prov:label"]] + '">');
+                  .html('<i class="fa fa-1x ' + iconCodes.default[data.entity["prov:label"]] + '"></i>');
                   //<title>' + data.entity["prov:label"] + '</title></i>'); //fa-money-bill
 
                 let a = node.activity;
@@ -169,7 +172,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                 div.transition()
                   .duration(100)
                   .style("opacity", .9);
-                div.html(data.entity["prov:value"]["$"])
+                div.html("<span>" + data.entity["prov:value"]["$"] + "</span>")
                   .style("left", (d3.event.pageX) + "px")
                   .style("top", (d3.event.pageY - 28) + "px");
                 })
