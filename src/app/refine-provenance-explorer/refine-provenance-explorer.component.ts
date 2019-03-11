@@ -105,10 +105,47 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                 .attr("fill", d => "grey")
                 .attr("fill-opacity", 0.25)
                 // .attr("stroke-width", (d:any) => Math.max(1, d.width))
-                .append("title")
-              .text((d:any) => {
-                return `${d.key}`;
+              // .append("title")
+            link.append("svg:foreignObject")
+                // .attr("x", 10)
+                // .attr("y", 10)
+                .attr('x', (d:any) => d.target.x0 - (d.target.x0 - d.source.x1)/2)
+                .attr('y', (d:any) => {
+                  return d.y1 - (d.y1-d.y0)/2; // - (d.source.y1 - (d.source.height/2)/2)
+                })
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'central')
+                .attr('font-family', 'Font Awesome 5 Free')
+                .attr('fill', 'black')
+                .attr('font-weight', 900)
+                .attr('font-size', iconHeight + 'px')
+                .attr('overflow', 'visible')
+              .html((d:any) => {
+                if(this.provenanceOverlayModel.provenance.activity["facet:" + d.activity.replace("change:", "")]) {
+                  return '<i class="fa fa-1x fa-chart-bar"></i>';
+                }
               });
+            link.on("mouseover", (data:any) => {
+              if(this.provenanceOverlayModel.provenance.activity["facet:" + data.activity.replace("change:", "")]) {
+                let text = Object.entries(this.provenanceOverlayModel.provenance.activity["facet:" + data.activity.replace("change:", "")])
+                  .map((f:any) => { 
+                    return f[0].replace("facet:", "") + ": " + f[1].$;
+                  });
+              div.transition()
+                .duration(100)
+                .style("opacity", .9);
+              div.html("<span>" + text.join("<br>") + "</span>")
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+                return text;
+              }
+            })
+            .on("mouseout", (d:any) => {
+              div.transition()
+                .duration(100)
+                .style("opacity", 0);
+            });
+              
 
             let ops = [];
             Object.values(graph.nodes).forEach((n:any) => {
@@ -151,16 +188,17 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                     });
                 d3.select(node[idx])
                   .append('svg:foreignObject')
-                  .attr('x', (d:any) => d.x0)
-                  .attr('y', (d:any) => d.y1)
-                  .attr('text-anchor', 'middle')
-                  .attr('dominant-baseline', 'central')
-                  .attr('font-family', 'Font Awesome 5 Free')
-                  .attr('fill', 'black')
-                  .attr('font-weight', 900)
-                  .attr('font-size', iconHeight + 'px')
-                  .attr('height', '100%')
-                  .attr('width', '100%')
+                    .attr('x', (d:any) => d.x0)
+                    .attr('y', (d:any) => d.y1)
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'central')
+                    .attr('font-family', 'Font Awesome 5 Free')
+                    .attr('fill', 'black')
+                    .attr('font-weight', 900)
+                    .attr('font-size', iconHeight + 'px')
+                    .attr('overflow', 'visible')
+                    // .attr('height', '100%')
+                    // .attr('width', '100%')
                   // .attr('fill', 'black')
                   // .attr('stroke', 'none')
                   .html('<i class="fa fa-1x ' + iconCodes.default[data.entity["prov:label"]] + '"></i>');

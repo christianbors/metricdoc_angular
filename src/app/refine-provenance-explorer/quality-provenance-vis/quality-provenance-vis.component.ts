@@ -24,6 +24,8 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   qualityViewWidth: number = 80;
   transition;
   scaleByHistory;
+  metricColorScale;
+  metricBorderScale;
 
   @ViewChild('qualityView')
   svgDetailView:ElementRef;
@@ -57,18 +59,27 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
         this.renderQualityView(true);
       }
     }
-    if (changes.nodeHistory)
+    if (changes.nodeHistory && changes.nodeHistory.currentValue != null && this.provenanceOverlayModel) {
       this.nodeHistory = changes.nodeHistory.currentValue;
+    }
     if (changes.histId)
       this.histId = changes.histId.currentValue;
-    if (this.provenanceOverlayModel && this.loadFinished === true && this.nodeHistory && this.histId) {
+    if (this.nodeHistory && this.histId) {
       let historyArray = this.nodeHistory.map(hist => hist.id);
       this.scaleByHistory = d3.scaleBand().domain(historyArray).range([15, parseFloat(this.svgDetailView.nativeElement.scrollWidth) - 15]).padding(0.05);
 
-      this.renderIssueViewForHistId(this.histId, d3.select("#issueView"), parseFloat(this.svgErrorView.nativeElement.scrollWidth) - 15);
-      this.renderIssueHistoryView();
-      this.renderQualityView(true);
+      if(this.provenanceOverlayModel) {
+        this.renderIssueViewForHistId(this.histId, d3.select("#issueView"), parseFloat(this.svgErrorView.nativeElement.scrollWidth) - 15);
+        this.renderIssueHistoryView();
+        this.renderQualityView(true);
+      }
     }
+  }
+
+  ngAfterViewChecked() {
+    // this.renderIssueViewForHistId(this.histId, d3.select("#issueView"), parseFloat(this.svgErrorView.nativeElement.scrollWidth) - 15);
+    // this.renderIssueHistoryView();
+    // this.renderQualityView(true);
   }
 
   private getRefineProject() {
@@ -76,6 +87,9 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       .subscribe(
         openRefineProject => {
           this.provenanceOverlayModel = openRefineProject.overlayModels['qualityProvenance'];
+          this.renderIssueViewForHistId(this.histId, d3.select("#issueView"), parseFloat(this.svgErrorView.nativeElement.scrollWidth) - 15);
+          this.renderIssueHistoryView();
+          this.renderQualityView(true);
         },
         error => this.errorMessage = <any>error
     );
@@ -136,15 +150,18 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
     let y = d3.scaleLinear().rangeRound([this.svgDetailView.nativeElement.scrollHeight - 20, 0]).domain([0, maxVal]).nice();
 
     // let metricColorScale = d3.scaleSequential(d3.interpolateViridis);
-    metricColPair.forEach(val => {
-      if (!this.uniqueMetrics.includes(val.metric.replace("quality:", "")))
-        this.uniqueMetrics.push(val.metric.replace("quality:", "")); 
-    })
+    if(this.uniqueMetrics.length == 0 || !this.metricColorScale) {
+      metricColPair.forEach(val => {
+        if (!this.uniqueMetrics.includes(val.metric.replace("quality:", "")))
+          this.uniqueMetrics.push(val.metric.replace("quality:", "")); 
+      })
+      this.uniqueMetrics.sort();
 
-    let metricColorScale = d3.scaleOrdinal(d3.schemePastel2).domain(this.uniqueMetrics);
-    let metricBorderScale = d3.scaleOrdinal(d3.schemeDark2).domain(this.uniqueMetrics);
-    if (!this.scaleByHistory) {
-      this.scaleByHistory = d3.scaleBand().domain(historyFlow.map(historyEntry => historyEntry.pastEntry.id)).range([15, parseFloat(this.svgDetailView.nativeElement.scrollWidth) - 15]).padding(0.05);
+      this.metricColorScale = d3.scaleOrdinal(d3.schemePastel2).domain(this.uniqueMetrics);
+      this.metricBorderScale = d3.scaleOrdinal(d3.schemeDark2).domain(this.uniqueMetrics);
+      if (!this.scaleByHistory) {
+        this.scaleByHistory = d3.scaleBand().domain(historyFlow.map(historyEntry => historyEntry.pastEntry.id)).range([15, parseFloat(this.svgDetailView.nativeElement.scrollWidth) - 15]).padding(0.05);
+      }
     }
 
     d3.select('svg.barchart').selectAll("g").remove();
@@ -154,8 +171,8 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       .append("g")
         .attr("class", (stack:any) => stack.key.column + " " + stack.key.metric)
         // .attr("transform", d3Transform.transform().translate(20,15))
-        .attr("fill", (d:any) => metricColorScale(d.key.metric.replace("quality:", "")) )
-        .attr("stroke", (d:any) => metricBorderScale(d.key.metric.replace("quality:", "")) )
+        .attr("fill", (d:any) => this.metricColorScale(d.key.metric.replace("quality:", "")) )
+        .attr("stroke", (d:any) => this.metricBorderScale(d.key.metric.replace("quality:", "")) )
         .attr("stroke-width", .5)
         .attr("stroke-opacity", .6)
         .on("mouseover", (data:any, i:number, el:any) => {
@@ -198,14 +215,21 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       // let histId = entity[0].replace("history_entry:", "");
       let errorIndices = [];
       if (this.provenanceOverlayModel.provenance.entity[ent]["error:"+histId]) {
-        for (let errorArray of this.provenanceOverlayModel.provenance.entity[ent]["error:"+histId])
+        for (let errorArray of this.provenanceOverlayModel.provenance.entity[ent]["error:"+histId]) {
           errorIndices.push({metric: errorArray.type, indices: JSON.parse(errorArray.$)});
+          if (!this.uniqueMetrics.includes(errorArray.type.replace("error:",""))) {
+            this.uniqueMetrics.push(errorArray.type.replace("error:",""));
+          }
+        }
         issues.push({col: ent, issues: errorIndices});
       }
     };
+    this.uniqueMetrics.sort();
   
-    let metricColorScale = d3.scaleOrdinal(d3.schemePastel2).domain(this.uniqueMetrics);
-    let metricBorderScale = d3.scaleOrdinal(d3.schemeDark2).domain(this.uniqueMetrics);
+    if (!this.metricColorScale || !this.metricColorScale) {
+      this.metricColorScale = d3.scaleOrdinal(d3.schemePastel2).domain(this.uniqueMetrics);
+      this.metricBorderScale = d3.scaleOrdinal(d3.schemeDark2).domain(this.uniqueMetrics);
+    }
     
     let scaleXColumn = d3.scaleBand()
       .domain(issues.map(issuesEntry => issuesEntry.col))
@@ -261,8 +285,8 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
     // ENTER new elements present in new data.
     gIssues.enter().append("g")
       .attr("class", (d:any) => d.metric.replace("error:", "") )
-      .attr("fill", (d:any) =>  metricColorScale(d.metric.replace("error:", "")))
-      .attr("stroke", (d:any) =>  metricColorScale(d.metric.replace("error:", "")));
+      .attr("fill", (d:any) =>  this.metricColorScale(d.metric.replace("error:", "")))
+      .attr("stroke", (d:any) =>  this.metricColorScale(d.metric.replace("error:", "")));
 
     let rectIssues = selectElement.selectAll("g.column").selectAll("g").selectAll("rect")
       .data((d:any) => d.indices);
