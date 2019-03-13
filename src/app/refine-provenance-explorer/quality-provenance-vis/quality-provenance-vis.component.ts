@@ -35,6 +35,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   errorMessage;
   uniqueMetrics: string[] = [];
 
+  columnModel: any;
   provenanceOverlayModel: any;
 
   constructor() { 
@@ -73,6 +74,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
     this.openRefineService.getRefineProject(this.projectId)
       .subscribe(
         openRefineProject => {
+          this.columnModel = openRefineProject.columnModel;
           this.provenanceOverlayModel = openRefineProject.overlayModels['qualityProvenance'];
           this.openRefineService.getHistory(this.projectId)
             .subscribe((history: any) => {
@@ -209,7 +211,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
         .attr("width", this.scaleByHistory.bandwidth());
   }
 
-  private renderIssueViewForHistId(histId: any, selectElement: any, translate: number, elementWidth: number, maxRows: number):any {
+  private renderIssueViewForHistId(histId: any, selectElement: any, translate: number, elementWidth: number):any {
     let issues = [];
     for (let ent in this.provenanceOverlayModel.provenance.entity) {
       // let histId = entity[0].replace("history_entry:", "");
@@ -225,6 +227,14 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       }
     };
     this.uniqueMetrics.sort();
+    issues.sort((colA: any, colB:any) => {
+      let fullColA = this.provenanceOverlayModel.columnIds.find((d:any) => d.localPart === colA.col.replace("column:",""));
+      let fullColB = this.provenanceOverlayModel.columnIds.find((d:any) => d.localPart === colB.col.replace("column:",""));
+
+      fullColA = this.columnModel.columns.find((d:any) => d.name === fullColA.columnName);
+      fullColB = this.columnModel.columns.find((d:any) => d.name === fullColB.columnName);
+      return fullColA.cellIndex - fullColB.cellIndex;
+    })
 
     selectElement.attr("transform", "translate(" + translate + ",15)");
   

@@ -6,6 +6,8 @@ import { OpenRefineProject }                    from './../shared/open-refine/mo
 import { ProjectMetadata }                      from './../shared/open-refine/model/project-metadata';
 import { ProvenanceOverlayModel }               from './../refine-provenance/model/provenance-overlay-model';
 
+import { ContextMenuComponent, ContextMenuService } from 'ngx-contextmenu';
+
 import * as d3         from 'd3';
 import * as d3Sankey   from './d3-sankey.js';
 import * as iconCodes  from './icon-codes.json';
@@ -24,6 +26,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   refineProjectUrl;
   histId: any;
   nodeHistory: any[];
+  shiftNodeHistory: any[];
   projectMetadata: ProjectMetadata;
   openRefineProject: OpenRefineProject;
   provenanceOverlayModel: any;
@@ -233,7 +236,15 @@ export class RefineProvenanceExplorerComponent implements OnInit {
               })
               .on("click", (data:any, index:number, entries:any[]) => {
                 this.histId = data.key.replace("history_entry:", "");
-                this.determineNodeHistory(this.histId);
+                if (d3.event.shiftKey) {
+                  this.shiftNodeHistory = this.determineNodeHistory(this.histId);
+                  this.highlightProvGraph(this.shiftNodeHistory, "shiftSelected");
+                } else {
+                  this.clearProvGraphHighlights();
+                  this.shiftNodeHistory = []
+                  this.nodeHistory = this.determineNodeHistory(this.histId);
+                  this.highlightProvGraph(this.nodeHistory, "selected");
+                }
               });
 
             this.openRefineService.getHistory(this.projectId)
@@ -367,12 +378,12 @@ export class RefineProvenanceExplorerComponent implements OnInit {
          + "L" + x0 + "," + y0;
   }
 
-  determineNodeHistory(historyId: any):void {
+  determineNodeHistory(historyId: any):any[] {
     // let histories = Object.entries(this.provenanceOverlayModel.provenance.entity).filter((entity: any) => { if (entity[0].includes("history_entry:")) return entity; });
-    this.nodeHistory = [];
+    let nodeHistory = [];
     let parent = "history_entry:" + this.histId;
     while (parent) {
-      this.nodeHistory.splice(0, 0, { id: parent.replace("history_entry:", ""), value: this.provenanceOverlayModel.provenance.entity[parent] });
+      nodeHistory.splice(0, 0, { id: parent.replace("history_entry:", ""), value: this.provenanceOverlayModel.provenance.entity[parent] });
       let wdfParent = Object.values(this.provenanceOverlayModel.provenance.wasDerivedFrom).find((wdf: any) => {
         return wdf["prov:generatedEntity"] == parent;
       });
@@ -380,24 +391,59 @@ export class RefineProvenanceExplorerComponent implements OnInit {
         parent = null;
       parent = wdfParent["prov:usedEntity"];
       // nodeHistory.push(this.provenanceOverlayModel.provenance.entity[parent["prov:generatedEntity"]]);
-    }
-    d3.select("svg.provGraph").selectAll("rect")
-      .classed("selected", false);
-    d3.select("svg.provGraph").selectAll("path")
-      .classed("selected", false)
+    }    
+    return nodeHistory;
+  }
 
-    for (let node of this.nodeHistory) {
+  clearProvGraphHighlights() {
+    d3.select("svg.provGraph").selectAll("rect").attr("class", "");
+      // .classed("selected", false)
+      // .classed("shiftSelected", false);
+    d3.select("svg.provGraph").selectAll("path").attr("class", "");
+      // .classed("selected", false)
+      // .classed("shiftSelected", false);
+  }
+
+  highlightProvGraph(hist: any[], classString: string):void {
+    for (let node of hist) {
       let idString = node.id.replace("history_entry:", "");
       d3.select("svg.provGraph").select("rect#activity" + idString)
-        .classed("selected", true);
+        .classed(classString, true);
         // .attr('stroke', 'gray')
         // .attr('stroke-width', '2px');
-      d3.select("svg.provGraph").select("path#activity" + idString)
-        .classed("selected", true);
+
+      let path = d3.select("svg.provGraph").select("path#activity" + idString)
+      if(!path.empty() && !path.classed("selected"))
+        path.classed(classString, true);
         // .attr("fill", "#a2b9bc")
         // .attr('stroke', 'gray')
         // .attr("fill-opacity", 0.85)
         // .attr('stroke-width', '2px');
     }
+  }
+
+  private onContextMenu($event: MouseEvent, item: any, metric: any): void {
+    let metricContext = item.metrics[metric];
+    if (metricContext) {
+      this.contextMenuService.show.next({
+        // Optional - if unspecified, all context menu components will open
+        contextMenu: this.existingMenu,
+        event: $event,
+        item: metricContext
+      });
+    } else {
+      this.contextMenuService.show.next({
+        contextMenu: this.newMenu,
+        event: $event,
+        item: metric
+      })
+    }
+    $event.preventDefault();
+    $event.stopPropagation();
+    // this.contextMenuService.show.next({
+    //   actions: this.menuOptions,
+    //   event: $event,
+    //   item: item
+    // });
   }
 }

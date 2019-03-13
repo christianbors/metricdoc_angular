@@ -7,6 +7,20 @@
   [nodeHistory]="nodeHistory"
   [loadFinished]="loadFinished"></app-quality-provenance-vis>
 <svg #provGraph class="provGraph" [style.width.%]="pageWidth" [style.height.%]="sankeyHeight"></svg>
+<context-menu #metric>
+  <!-- <ng-template contextMenuItem divider="true"></ng-template> -->
+  <ng-template contextMenuItem let-item (execute)="deleteMetric($event.item)">
+    Bye, {{item?.name}}
+  </ng-template>
+  <ng-template contextMenuItem passive="true">
+    Input something: <input type="text">
+  </ng-template>
+</context-menu>
+<context-menu #newMetric>
+  <ng-template contextMenuItem let-item>
+    Add Metric: {{item}}
+  </ng-template>
+</context-menu>
 <!-- TODO: uncomment refine project -->
 <!-- <iframe [style.width.%]="pageWidth" [style.height.%]="refineHeight" [src]="refineProjectUrl"></iframe> -->
  <!-- (window:resize)="onResize(svg.getBoundingClientRect())" -->
