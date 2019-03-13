@@ -172,12 +172,19 @@ export class RefineProvenanceExplorerComponent implements OnInit {
               .each((data: any, idx: number, node:any) => {
                 let activityId = data.key.replace("history_entry:", "");
                 let nodeHeight:number = data.y1 - data.y0;
-                let nodeWidth:number = data.x1 - data.x0;
+                // if(data.x1)
+                  // let nodeWidth:number = data.x1 - data.x0;
+                // nodeWidth;
 
                 d3.select(node[idx])
                   .append("rect")
                     .attr("id", "activity" + activityId)
-                    .attr("x", data.x0)
+                    .attr("x", (d:any) => { 
+                      if(d.x0) 
+                        return d.x0 
+                      else 
+                        return 0 
+                    })
                     .attr("y", data.y0)
                     .attr("height", data.y1 - data.y0)
                     .attr("width", nodeWidth)
@@ -188,7 +195,12 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                     });
                 d3.select(node[idx])
                   .append('svg:foreignObject')
-                    .attr('x', (d:any) => d.x0)
+                    .attr("x", (d:any) => { 
+                      if(d.x0) 
+                        return d.x0 
+                      else 
+                        return 0 
+                    })
                     .attr('y', (d:any) => d.y1)
                     .attr('text-anchor', 'middle')
                     .attr('dominant-baseline', 'central')
@@ -227,6 +239,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
             this.openRefineService.getHistory(this.projectId)
               .subscribe((history: any) => {
                 this.nodeHistory = [];
+                this.nodeHistory.push({ id: 0, value: this.provenanceOverlayModel.provenance.entity["history_entry:0"] });
                 for (let pastEntry of history.past) {
                   this.nodeHistory.push({ id: pastEntry.id, value: this.provenanceOverlayModel.provenance.entity["history_entry:" + pastEntry.id] });
                   d3.select("svg.provGraph").select("rect#activity" + pastEntry.id)
@@ -235,7 +248,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                     .classed("selected", true);
                 }
                 this.loadFinished = true;
-              })
+              });
           }
         },
         error => this.errorMessage = <any>error
