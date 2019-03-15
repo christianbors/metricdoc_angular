@@ -77,8 +77,11 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       this.scaleHistory();
       this.scaleComparison()
     }
-    if (changes.histId)
+    if (changes.histId) {
       this.histId = changes.histId.currentValue;
+      if (this.provenanceOverlayModel)
+        this.renderIssueSelectionView();
+    }
   }
 
   private getRefineProject() {
@@ -240,7 +243,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
           gr.selectAll("path")
             .classed("metric-link", true);
           
-          if (quality.data.historyEntry.id === parseInt(this.histId)) {
+          if (parseInt(quality.data.historyEntry.id) === parseInt(this.histId)) {
             d3.select("#issueView")
               .select("g." + quality.data.column.replace("column:", "").replace(/[^a-zA-Z ]/g, ""))
               .select("g." + quality.data.metric.replace("quality:",""))
@@ -263,7 +266,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
           gr.selectAll("path")
             .classed("metric-link", (quality:any) => quality.from.data.value != quality.to.data.value);
           
-          if (quality.data.historyEntry.id === parseInt(this.histId)) {
+          if (parseInt(quality.data.historyEntry.id) === parseInt(this.histId)) {
             d3.select("#issueView")
               .select("g." + quality.data.column.replace("column:", "").replace(/[^a-zA-Z ]/g, ""))
               .select("g." + quality.data.metric.replace("quality:",""))

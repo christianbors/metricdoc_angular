@@ -158,8 +158,8 @@ export class RefineProvenanceExplorerComponent implements OnInit {
               if (!ops.includes(n.entity["prov:label"]))
                 ops.push(n.entity["prov:label"]);
             });
-            let sankeyColorScale = d3.scaleSequential(d3.interpolateViridis);
-            let scale = d3.scaleOrdinal(d3.schemeCategory10).domain(ops);
+            let sankeyColorScale = d3.scaleSequential(d3.interpolateBlues).domain([-1, ops.length]);
+            // let scale = d3.scaleOrdinal(d3.schemeCategory10).domain(ops);
 
             let cols:any = {};
             for(let k of Object.keys(this.provenanceOverlayModel.provenance.entity)) {
@@ -197,7 +197,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                     .attr("stroke", "none")
                     .attr("fill", (d:any) => {
                       let col = d.entity["prov:label"];
-                      return scale(col);
+                      return sankeyColorScale(ops.indexOf(col));
                     });
                 nodeElement.append('svg:foreignObject')
                     .attr("x", (d:any) => { 
