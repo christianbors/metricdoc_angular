@@ -37,14 +37,17 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   sankeyHeight: number = 25;
   refineHeight: number = 35;
 
-  @ViewChild('provGraph')
-  elHeight:ElementRef;
+  @ViewChild('qualityMetric') public metricMenu: ContextMenuComponent;
+  @ViewChild('issue') public issueMenu: ContextMenuComponent;
+
+  @ViewChild('provGraph') elHeight:ElementRef;
 
   d3Sankey;
 
   constructor(protected route: ActivatedRoute,
     protected router: Router,
     protected openRefineService: OpenRefineService,
+    protected contextMenuService: ContextMenuService,
     private domSanitizer : DomSanitizer) {
   }
 
@@ -427,13 +430,13 @@ export class RefineProvenanceExplorerComponent implements OnInit {
     if (metricContext) {
       this.contextMenuService.show.next({
         // Optional - if unspecified, all context menu components will open
-        contextMenu: this.existingMenu,
+        contextMenu: this.metricMenu,
         event: $event,
         item: metricContext
       });
     } else {
       this.contextMenuService.show.next({
-        contextMenu: this.newMenu,
+        contextMenu: this.issueMenu,
         event: $event,
         item: metric
       })

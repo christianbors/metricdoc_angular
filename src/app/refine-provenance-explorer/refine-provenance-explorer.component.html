@@ -7,7 +7,7 @@
   [nodeHistory]="nodeHistory"
   [loadFinished]="loadFinished"></app-quality-provenance-vis>
 <svg #provGraph class="provGraph" [style.width.%]="pageWidth" [style.height.%]="sankeyHeight"></svg>
-<context-menu #metric>
+<context-menu #qualityMetric>
   <!-- <ng-template contextMenuItem divider="true"></ng-template> -->
   <ng-template contextMenuItem let-item (execute)="deleteMetric($event.item)">
     Bye, {{item?.name}}
@@ -16,7 +16,7 @@
     Input something: <input type="text">
   </ng-template>
 </context-menu>
-<context-menu #newMetric>
+<context-menu #issue>
   <ng-template contextMenuItem let-item>
     Add Metric: {{item}}
   </ng-template>
