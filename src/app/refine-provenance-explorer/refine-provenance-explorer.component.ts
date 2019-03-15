@@ -63,10 +63,10 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   }
 
   getOpenRefineProject() {
-    let nodeWidth:number = 15;
-    let iconPadding:number = 4;
-    let iconHeight:number = 12;
-    let nodePadding:number = iconPadding*2 + iconHeight;
+    let nodeWidth:number = 36;
+    let iconPadding:number = 8;
+    let iconWidth:number = 16;
+    let nodePadding:number = iconPadding*2 + iconWidth;
 
     this.openRefineService.getRefineProject(this.projectId)
       .subscribe(
@@ -82,7 +82,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
             let sankeyDiag = d3Sankey.sankey()
               .nodeWidth(nodeWidth)
               .nodePadding(nodePadding)
-              .extent([[1, 1], [this.elHeight.nativeElement.scrollWidth, this.elHeight.nativeElement.scrollHeight - (iconHeight + nodePadding)]])
+              .extent([[1, 1], [this.elHeight.nativeElement.scrollWidth, this.elHeight.nativeElement.scrollHeight - (iconWidth + nodePadding)]])
               .nodeAlign(d3Sankey.sankeyLeft);
 
             sankeyDiag.nodes(graph.nodes)
@@ -124,7 +124,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                 .attr('font-family', 'Font Awesome 5 Free')
                 .attr('fill', 'black')
                 .attr('font-weight', 900)
-                .attr('font-size', iconHeight + 'px')
+                .attr('font-size', iconWidth + 'px')
                 .attr('overflow', 'visible')
               .html((d:any) => {
                 if(this.provenanceOverlayModel.provenance.activity["facet:" + d.activity.replace("change:", "")]) {
@@ -181,9 +181,9 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                 // if(data.x1)
                   // let nodeWidth:number = data.x1 - data.x0;
                 // nodeWidth;
-
-                d3.select(node[idx])
-                  .append("rect")
+                let nodeElement = d3.select(node[idx]);
+                
+                nodeElement.append("rect")
                     .attr("id", "activity" + activityId)
                     .attr("x", (d:any) => { 
                       if(d.x0) 
@@ -199,8 +199,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                       let col = d.entity["prov:label"];
                       return scale(col);
                     });
-                d3.select(node[idx])
-                  .append('svg:foreignObject')
+                nodeElement.append('svg:foreignObject')
                     .attr("x", (d:any) => { 
                       if(d.x0) 
                         return d.x0 
@@ -213,14 +212,9 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                     .attr('font-family', 'Font Awesome 5 Free')
                     .attr('fill', 'black')
                     .attr('font-weight', 900)
-                    .attr('font-size', iconHeight + 'px')
                     .attr('overflow', 'visible')
-                    // .attr('height', '100%')
-                    // .attr('width', '100%')
-                  // .attr('fill', 'black')
-                  // .attr('stroke', 'none')
+                    .style('padding-left', (nodeWidth - iconWidth)/2 + 'px')
                   .html('<i class="fa fa-1x ' + iconCodes.default[data.entity["prov:label"]] + '"></i>');
-                  //<title>' + data.entity["prov:label"] + '</title></i>'); //fa-money-bill
 
                 let a = node.activity;
               })

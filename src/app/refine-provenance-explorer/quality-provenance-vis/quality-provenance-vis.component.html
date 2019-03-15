@@ -1,6 +1,11 @@
 <h3>Quality Metrics per Transformation Step</h3>
-<svg #qualityView class="barchart" id="qualityView" [style.width.%]="qualityViewWidth" [style.height.%]="componentHeight"></svg>
+<!-- OLD VIEW -->
+<!-- <svg #qualityView class="barchart" id="qualityView" [style.width.%]="qualityViewWidth" [style.height.%]="componentHeight"></svg> -->
+<svg #qualityComparison class="barchart" id="comparisonView" [style.width.%]="qualityViewWidth" [style.height.%]="componentHeight"></svg>
+<!-- OLD DETAIL VIEW -->
 <svg #issueView class="heatmap" id="issueView" [style.width.%]="(100 - qualityViewWidth - 1)" [style.height.%]="componentHeight"></svg>
-<h3>Issues per Transformation Step</h3>
-<svg #issuesHistory class="barchart" id="issueHistory" [style.width.%]="100" [style.height.%]="componentHeight"></svg>
-<!-- [style.width.%]="100" [style.height.%]="100" -->
+
+<!-- <h3>Issues per Transformation Step</h3>
+<svg #issuesHistory class="barchart" id="issueHistory" [style.width.%]="100" [style.height.%]="componentHeight"></svg> -->
+<!-- <h3>Quality Comparison View</h3>
+<svg #qualityComparison class="barchart" id="comparisonView" [style.width.%]="100" [style.height.%]="componentHeight"></svg> -->
