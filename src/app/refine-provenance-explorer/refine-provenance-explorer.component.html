@@ -7,7 +7,10 @@
   [nodeHistory]="nodeHistory"
   [shiftNodeHistory]="shiftNodeHistory"
   [nodeWidth]="nodeWidth"
-  [loadFinished]="loadFinished"></app-quality-provenance-vis>
+  [scaleHistory]= "scaleHistory"
+  [sankeyDiag]="sankeyDiag"
+  [qualityViewWidth]="qualityViewWidth"
+  [detailViewWidth]="detailViewWidth"></app-quality-provenance-vis>
 <svg #provGraph class="provGraph" [style.width.%]="pageWidth" [style.height.%]="sankeyHeight"></svg>
 <context-menu #qualityMetric>
   <!-- <ng-template contextMenuItem divider="true"></ng-template> -->
