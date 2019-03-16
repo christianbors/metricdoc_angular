@@ -21,6 +21,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   @Input() nodeHistory: any[];
   @Input() shiftNodeHistory: any[];
   @Input() loadFinished: boolean;
+  @Input() nodeWidth: number;
 
   currentHistId: any;
   qualityViewWidth: number = 80;
@@ -55,27 +56,25 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges) {
     // && changes.histId && 
-    if (this.provenanceOverlayModel && (changes.nodeHistory || changes.shiftNodeHistory)) {
-      if (this.loadFinished) {
-        // this.scaleByHistory = d3.scaleBand().domain(historyArray).range([20, parseFloat(this.svgQualityView.nativeElement.scrollWidth) - 15]);//.padding(0.05);
-        this.scaleHistory();
+    // if (this.provenanceOverlayModel && (changes.nodeHistory || changes.shiftNodeHistory)) {
+    //   if (this.loadFinished) {
+    //     // this.scaleByHistory = d3.scaleBand().domain(historyArray).range([20, parseFloat(this.svgQualityView.nativeElement.scrollWidth) - 15]);//.padding(0.05);
         
-        this.renderIssueSelectionView();
-        if(this.nodeHistory && this.nodeHistory.length > 0) {
-          this.renderIssueHistoryView();
-          this.renderQualityView(this.nodeHistory, this.scaleByHistory, d3.select('svg.barchart'), true);
-        }
-      }
-    }
+    //     this.renderIssueSelectionView();
+    //     if(this.nodeHistory && this.nodeHistory.length > 0) {
+    //       this.scaleComparison()
+    //       // this.renderQualityView(this.nodeHistory, this.scaleByHistory, d3.select('svg.barchart'), true);
+    //     }
+    //   }
+    // }
     //changes.nodeHistory.currentValue != null
-    if ((changes.nodeHistory || changes.shiftNodeHistory) && this.provenanceOverlayModel) {
+    if ((changes.nodeHistory || changes.shiftNodeHistory) && this.provenanceOverlayModel && this.nodeWidth) {
       if (changes.nodeHistory)
         this.nodeHistory = changes.nodeHistory.currentValue;
       if (changes.shiftNodeHistory)
         this.shiftNodeHistory = changes.shiftNodeHistory.currentValue;
 
-      this.scaleHistory();
-      this.scaleComparison()
+      this.scaleComparison();
     }
     if (changes.histId) {
       this.histId = changes.histId.currentValue;
@@ -102,11 +101,9 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
                   .classed("selected", true);
               }
               this.loadFinished = true;
-              this.scaleHistory();
               this.renderIssueSelectionView();
-              if(this.nodeHistory && this.nodeHistory.length > 0) {
-                this.renderIssueHistoryView();
-                this.renderQualityView(this.nodeHistory, this.scaleByHistory, d3.select('svg.barchart'), true);
+              if(this.nodeHistory && this.nodeHistory.length > 0 && this.nodeWidth) {
+                this.scaleComparison();
               }
             });
         },
@@ -186,7 +183,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       })
       this.uniqueMetrics.sort();
 
-      this.scaleHistory();
+      this.scaleComparison();
     }
 
     rootElement.selectAll("g").remove();
@@ -214,7 +211,13 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       }).enter()
       .append("rect")
         .attr("x", (d:any) => {
-          return scale(d.data.historyEntry.id); 
+          // we don't use the regular bandwidth, so we need to do some calculations
+          if (nodeHistory.indexOf(d.data.historyEntry) == 0)
+            return scale(d.data.historyEntry.id)
+          else if (nodeHistory.indexOf(d.data.historyEntry) == nodeHistory.length-1)
+            return scale(d.data.historyEntry.id) + scale.bandwidth() - this.nodeWidth; 
+          else
+            return scale(d.data.historyEntry.id) + (scale.bandwidth()/2);
         })
         .attr("y", (d) => { 
           return y(d[1]); 
@@ -222,7 +225,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
         .attr("height", (d) => {
           return y(d[0]) - y(d[1]); 
         })
-        .attr("width", scale.bandwidth())
+        .attr("width", this.nodeWidth)
         .on("mouseover", (quality:any, i:number, el:any) => {
           d3.select(el[i])
             .attr("stroke-width", 1.5)
@@ -300,7 +303,23 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       .enter().append("path")
         .classed("metric-link", (quality:any) => quality.from.data.value != quality.to.data.value)
         .attr("d", (d:any) => {
-          return this.linkSkewed(d, y, scale);
+          let x0;
+          if (nodeHistory.indexOf(d.from.data.historyEntry) == 0)
+            x0 = scale(d.from.data.historyEntry.id) + this.nodeWidth;
+          // if (nodeHistory.indexOf(d.from.data.historyEntry) == 0)
+          //   return scale(d.from.data.historyEntry.id)
+          else if (nodeHistory.indexOf(d.from.data.historyEntry) == nodeHistory.length-1)
+          //   return scale(d.data.historyEntry.id) + scale.bandwidth() - this.nodeWidth; 
+            x0 = scale(d.from.data.historyEntry.id) + scale.bandwidth() - this.nodeWidth;
+          else 
+            x0 = scale(d.from.data.historyEntry.id) + (scale.bandwidth()/2 + this.nodeWidth);
+          
+          let x1;
+          if (nodeHistory.indexOf(d.to.data.historyEntry) == nodeHistory.length-1)
+            x1 = scale(d.to.data.historyEntry.id) + scale.bandwidth() - this.nodeWidth;
+          else
+            x1 = scale(d.to.data.historyEntry.id) + (scale.bandwidth()/2);
+          return this.linkSkewed(d, y, x0, x1);
         })
         .on("mouseover", (quality:any, i:number, el:any) => {
           d3.select(el[i]).classed("metric-link", true)
@@ -504,63 +523,58 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   }
   
 
-  private renderIssueHistoryView() {
-    // let histIdList = Object.entries(this.provenanceOverlayModel.provenance.entity).filter((entity: any) => entity[0].includes("history_entry:"));
-    d3.select('#issueHistory').selectAll("g").remove();
-    let qualityIssueHistoryView = d3.select('#issueHistory').selectAll("g.histEntry").data(this.nodeHistory.map((d:any) => d.id));
-    qualityIssueHistoryView.enter().append("g")
-      .each((d:any, i: number, data:any[]) => {
-        let el = d3.select(data[i]).classed("historyEntry" + d, true);
-        this.renderIssueViewForHistId(d, el, 0, this.scaleByHistory.bandwidth());
-      })
-      .attr("transform", (d:any) => {
-        let id = d;
-        if(this.scaleByHistory(id))
-          return "translate(" + this.scaleByHistory(id) + ",0)";
-        else
-          return "translate(-" + this.scaleByHistory.bandwidth() + ",0)";
-      })
-      .classed("histEntry", true);
-    let scaleYRows = d3.scaleLinear()
-      .domain([0, this.maxRowNumber])
-      .range([15, this.compareView.nativeElement.scrollHeight - 20]);
-    let yAxis = d3.axisLeft(scaleYRows);
-    d3.select('#issueHistory').append("g")
-      .classed("y-axis", true)
-      .attr("transform", "translate(" + this.scaleByHistory(this.nodeHistory[0].id) + ",0)")
-      .call(yAxis);
-  }
+  // private renderIssueHistoryView() {
+  //   // let histIdList = Object.entries(this.provenanceOverlayModel.provenance.entity).filter((entity: any) => entity[0].includes("history_entry:"));
+  //   d3.select('#issueHistory').selectAll("g").remove();
+  //   let qualityIssueHistoryView = d3.select('#issueHistory').selectAll("g.histEntry").data(this.nodeHistory.map((d:any) => d.id));
+  //   qualityIssueHistoryView.enter().append("g")
+  //     .each((d:any, i: number, data:any[]) => {
+  //       let el = d3.select(data[i]).classed("historyEntry" + d, true);
+  //       this.renderIssueViewForHistId(d, el, 0, this.scaleByHistory.bandwidth());
+  //     })
+  //     .attr("transform", (d:any) => {
+  //       let id = d;
+  //       if(this.scaleByHistory(id))
+  //         return "translate(" + this.scaleByHistory(id) + ",0)";
+  //       else
+  //         return "translate(-" + this.scaleByHistory.bandwidth() + ",0)";
+  //     })
+  //     .classed("histEntry", true);
+  //   let scaleYRows = d3.scaleLinear()
+  //     .domain([0, this.maxRowNumber])
+  //     .range([15, this.compareView.nativeElement.scrollHeight - 20]);
+  //   let yAxis = d3.axisLeft(scaleYRows);
+  //   d3.select('#issueHistory').append("g")
+  //     .classed("y-axis", true)
+  //     .attr("transform", "translate(" + this.scaleByHistory(this.nodeHistory[0].id) + ",0)")
+  //     .call(yAxis);
+  // }
 
-  private scaleHistory() {
-    let historyArray = this.nodeHistory.map(hist => hist.id);
-    this.scaleByHistory = d3.scaleBand().domain(historyArray).range([35, parseFloat(this.compareView.nativeElement.scrollWidth) - 15]).padding(0.8);
-        // this.scaleByHistory = d3.scaleBand().domain(historyFlow.map(historyEntry => historyEntry.historyEntry.id)).range([35, parseFloat(this.svgQualityView.nativeElement.scrollWidth) - 15]); //.padding(0.05)
-  }
+  // private scaleHistory(history: any[]): any {
+  //   let historyArray = this.nodeHistory.map(hist => hist.id);
+  //   return d3.scaleLinear().domain(historyArray).range([35, parseFloat(this.compareView.nativeElement.scrollWidth) - this.nodeWidth - 15]);
+  //       // this.scaleByHistory = d3.scaleBand().domain(historyFlow.map(historyEntry => historyEntry.historyEntry.id)).range([35, parseFloat(this.svgQualityView.nativeElement.scrollWidth) - 15]); //.padding(0.05)
+  // }
 
   private scaleComparison() {
     let histories = this.nodeHistory.map(hist => hist.id);
     let rate = 1;
     d3.select("#comparisonView").selectAll("g").remove();
-    let ratioScale = d3.scaleLinear().domain([0, 1]).range([35, parseFloat(this.compareView.nativeElement.scrollWidth) - 15]);
+    let ratioScale = d3.scaleLinear().domain([0, 1]).range([35, parseFloat(this.compareView.nativeElement.scrollWidth) - this.nodeWidth - 15]);
     if(this.shiftNodeHistory && this.shiftNodeHistory.length > 0) {
       let shiftHistories = this.shiftNodeHistory.map(hist => hist.id);
-      // shiftHistories.reverse();
-
-      rate = histories.length/(histories.length + shiftHistories.length);
-      // } else {
-      //   rate = 1;
-      // }
-
+      
       // this scale determines how much space is available for both quality views
-      console.log("ratio: 0: " + ratioScale(0) + ", rate: " + ratioScale(rate) + ", 1: " + ratioScale(1));
-
-      let compareShiftHistoryScale = d3.scaleBand().domain(shiftHistories).range([ratioScale(rate), ratioScale(1)]).padding(0.8);
+      rate = histories.length/(histories.length + shiftHistories.length);
+      
+      // d3.scaleLinear().domain(historyArray).range([35, parseFloat(this.compareView.nativeElement.scrollWidth) - this.nodeWidth - 15]);
+      let compareShiftHistoryScale = d3.scaleBand().domain(shiftHistories).range([ratioScale(rate), ratioScale(1)]).padding(.2);
 
       let compareB = d3.select("#comparisonView").append("g").classed("compareB", true);
       this.renderQualityView(this.shiftNodeHistory, compareShiftHistoryScale, compareB, true);
     }
     let compareA = d3.select("#comparisonView").append("g").classed("compareA", true);
-    let compareHistoryScale = d3.scaleBand().domain(histories).range([ratioScale(0), ratioScale(rate)]).padding(0.8);
+    let compareHistoryScale = d3.scaleBand().domain(histories).range([ratioScale(0), ratioScale(rate)]);
     this.renderQualityView(this.nodeHistory, compareHistoryScale, compareA, true);
   }
 
@@ -576,12 +590,12 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
     }
   }
 
-  private linkSkewed(d: any, yFunction: any, scale: any): any {
+  private linkSkewed(d: any, yFunction: any, x0: any, x1:any): any {
     // if (parseFloat(d.from.data.value) != parseFloat(d.to.data.value)) {
       var curvature = .6;
-      let x0 = scale(d.from.data.historyEntry.id) + scale.bandwidth(),
-          x1 = scale(d.to.data.historyEntry.id),
-          xi = d3.interpolateNumber(x0, x1),
+      // let x0 = scale(d.from.data.historyEntry.id) + this.nodeWidth,
+          // x1 = scale(d.to.data.historyEntry.id) + scale.bandwidth() - this.nodeWidth,
+      let xi = d3.interpolateNumber(x0, x1),
           x2 = xi(curvature),
           x3 = xi(1 - curvature),
           y0 = yFunction(d.from[0]),

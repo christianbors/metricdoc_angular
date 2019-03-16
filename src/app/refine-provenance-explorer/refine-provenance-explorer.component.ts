@@ -31,16 +31,18 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   openRefineProject: OpenRefineProject;
   provenanceOverlayModel: any;
   loadFinished: boolean = false;
+  scaleHistory: any;
 
   pageWidth: number = 100;
   detailHeight: number = 40;
   sankeyHeight: number = 25;
   refineHeight: number = 35;
+  nodeWidth:number = 36;
 
   @ViewChild('qualityMetric') public metricMenu: ContextMenuComponent;
   @ViewChild('issue') public issueMenu: ContextMenuComponent;
 
-  @ViewChild('provGraph') elHeight:ElementRef;
+  @ViewChild('provGraph') provGraph:ElementRef;
 
   d3Sankey;
 
@@ -63,7 +65,6 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   }
 
   getOpenRefineProject() {
-    let nodeWidth:number = 36;
     let iconPadding:number = 8;
     let iconWidth:number = 16;
     let nodePadding:number = iconPadding*2 + iconWidth;
@@ -80,9 +81,9 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
             // let sankeyDiag = this.d3Sankey.computeNodeValues();
             let sankeyDiag = d3Sankey.sankey()
-              .nodeWidth(nodeWidth)
+              .nodeWidth(this.nodeWidth)
               .nodePadding(nodePadding)
-              .extent([[1, 1], [this.elHeight.nativeElement.scrollWidth, this.elHeight.nativeElement.scrollHeight - (iconWidth + nodePadding)]])
+              .extent([[0, 0], [this.provGraph.nativeElement.scrollWidth, this.provGraph.nativeElement.scrollHeight - (iconWidth + nodePadding)]])
               .nodeAlign(d3Sankey.sankeyLeft);
 
             sankeyDiag.nodes(graph.nodes)
@@ -158,6 +159,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
               if (!ops.includes(n.entity["prov:label"]))
                 ops.push(n.entity["prov:label"]);
             });
+            // -1 prevents drawing of color white
             let sankeyColorScale = d3.scaleSequential(d3.interpolateBlues).domain([-1, ops.length]);
             // let scale = d3.scaleOrdinal(d3.schemeCategory10).domain(ops);
 
@@ -193,7 +195,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                     })
                     .attr("y", data.y0)
                     .attr("height", data.y1 - data.y0)
-                    .attr("width", nodeWidth)
+                    .attr("width", this.nodeWidth)
                     .attr("stroke", "none")
                     .attr("fill", (d:any) => {
                       let col = d.entity["prov:label"];
@@ -213,7 +215,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                     .attr('fill', 'black')
                     .attr('font-weight', 900)
                     .attr('overflow', 'visible')
-                    .style('padding-left', (nodeWidth - iconWidth)/2 + 'px')
+                    .style('padding-left', (this.nodeWidth - iconWidth)/2 + 'px')
                   .html('<i class="fa fa-1x ' + iconCodes.default[data.entity["prov:label"]] + '"></i>');
 
                 let a = node.activity;
@@ -255,7 +257,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   d3.select("svg.provGraph").select("path#activity" + pastEntry.id)
                     .classed("selected", true);
                 }
-                this.loadFinished = true;
+                this.scaleHistory = d3.scaleBand().domain(this.nodeHistory).range([35, parseFloat(this.provGraph.nativeElement.scrollWidth) - 15]).padding(0.8);
               });
           }
         },
