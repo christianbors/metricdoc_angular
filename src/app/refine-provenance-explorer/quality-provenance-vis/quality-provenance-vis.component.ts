@@ -29,22 +29,29 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   currentHistId: any;
   qualityCompareViewWidth: number = 0;
   elementPadding: number = 35;
+  innerPadding: number = .8;
   maxRowNumber: number;
   transition;
 
   // @ViewChild('qualityView')
   // svgQualityView:ElementRef;
-  @ViewChild('issueView')
-  svgErrorView:ElementRef;
+  detailIssueView:ElementRef;
   @ViewChild('qualityComparison')
   compareView:ElementRef;
   div;
+  showDetail: boolean = false;
 
   errorMessage;
   uniqueMetrics: string[] = [];
 
   columnModel: any;
   provenanceOverlayModel: any;
+
+  @ViewChild('issueView') set content(content: ElementRef) {
+    this.detailIssueView = content;
+    if (this.detailIssueView && this.provenanceOverlayModel)
+      this.renderIssueSelectionView();
+ }
 
   constructor() { 
   }
@@ -80,10 +87,12 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
     }
     if (changes.histId) {
       this.histId = changes.histId.currentValue;
-      if (this.provenanceOverlayModel)
+      if (this.provenanceOverlayModel && this.detailIssueView)
         this.renderIssueSelectionView();
     }
     if (changes.detailViewWidth && this.provenanceOverlayModel)
+      this.renderIssueSelectionView();
+    if (changes.detailIssueView)
       this.renderIssueSelectionView();
   }
 
@@ -231,7 +240,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
           // else
           //   return scale(d.data.historyEntry.id) + (scale.bandwidth()/2);
 
-          return scale(d.data.historyEntry.id)
+          return scale(d.data.historyEntry.depth)
         })
         .attr("y", (d) => { 
           return y(d[1]); 
@@ -317,8 +326,8 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       .enter().append("path")
         .classed("metric-link", (quality:any) => quality.from.data.value != quality.to.data.value)
         .attr("d", (d:any) => {
-          let x0 = scale(d.from.data.historyEntry.id) + scale.bandwidth(),
-              x1 = scale(d.to.data.historyEntry.id);
+          let x0 = scale(d.from.data.historyEntry.depth) + scale.bandwidth(),
+              x1 = scale(d.to.data.historyEntry.depth);
 
           return this.linkSkewed(d, y, x0, x1);
         })
@@ -345,7 +354,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
         });
   }
 
-  private renderIssueViewForHistId(histId: any, selectElement: any, translate: number, elementWidth: number):any {
+  private renderIssueViewForHistId(histId: any, selectElement: any, translate: number, rows: number, elementWidth: number):any {
     let issues = [];
     for (let ent in this.provenanceOverlayModel.provenance.entity) {
       // let histId = entity[0].replace("history_entry:", "");
@@ -379,15 +388,15 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
     let scaleXColumn = d3.scaleBand()
       .domain(issues.map(issuesEntry => issuesEntry.col))
       .range([translate, elementWidth]); //.padding(0.05)
-    let maxRows:number[] = Object.entries(this.provenanceOverlayModel.provenance.entity["project_info:dataset"]).map((el: any) => {
-      // let histIds = this.nodeHistory.map(d => d.id);
-      if (this.nodeHistory && this.nodeHistory.map(d => parseInt(d.id)).includes(parseInt(el[0].replace("other:", ""))) && el[1].type === "project_info:rowSize")
-        return parseInt(el[1].$);
-    }).filter(el => el);
-    this.maxRowNumber = Math.max.apply(Math, maxRows);
+    // let maxRows:number[] = Object.entries(this.provenanceOverlayModel.provenance.entity["project_info:dataset"]).map((el: any) => {
+    //   // let histIds = this.nodeHistory.map(d => d.id);
+    //   if (this.nodeHistory && this.nodeHistory.map(d => parseInt(d.id)).includes(parseInt(el[0].replace("other:", ""))) && el[1].type === "project_info:rowSize")
+    //     return parseInt(el[1].$);
+    // }).filter(el => el);
+    // this.maxRowNumber = Math.max.apply(Math, maxRows);
     
     let scaleYRows = d3.scaleLinear()
-      .domain([0, this.maxRowNumber])
+      .domain([0, rows])
       .range([15, this.compareView.nativeElement.scrollHeight - 20]);
 
     // let issueView = 
@@ -489,7 +498,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
         .attr("width", scaleXColumn.bandwidth())
     rectIssues.exit()
       // .transition(this.transition)
-        .attr("y", scaleYRows(this.maxRowNumber))
+        .attr("y", scaleYRows(rows))
       .remove();
 
     let xAxis = d3.axisBottom(scaleXColumn);
@@ -515,10 +524,11 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   private renderIssueSelectionView() {
     let translX = 25;
     d3.select('#issueView g.axis').remove();
-    this.renderIssueViewForHistId(this.histId, d3.select("#issueView"), translX, this.detailViewWidth - 25);
+    let rows:number = this.provenanceOverlayModel.provenance.entity["project_info:dataset"]["other:" + this.histId].$;
+    this.renderIssueViewForHistId(this.histId, d3.select("#issueView"), translX, rows, this.detailViewWidth - 25);
     d3.select("#issueView").attr("transform", "translate(" + translX + ",0)");
     let scaleYRows = d3.scaleLinear()
-      .domain([0, this.maxRowNumber])
+      .domain([0, rows])
       .range([15, this.compareView.nativeElement.scrollHeight - 20]);
     let yAxis = d3.axisLeft(scaleYRows);
     d3.select('#issueView g.axis').append("g")
@@ -574,8 +584,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
           hist.depth = node.depth;
       }
     })
-    let ratioScale = d3.scaleLinear().domain([0, 1]).range([this.elementPadding, this.scaleHistory(this.nodeHistory[this.nodeHistory.length-1].depth) + this.scaleHistory.bandwidth()]);
-    console.log(ratioScale.range());
+    // let ratioScale = d3.scaleLinear().domain([0, 1]).range([this.elementPadding, this.scaleHistory(this.nodeHistory[this.nodeHistory.length-1].depth) + this.scaleHistory.bandwidth()]);
     if(this.shiftNodeHistory && this.shiftNodeHistory.length > 0) {
       this.shiftNodeHistory.reverse();
       let shiftHistories = this.shiftNodeHistory.map(hist => hist.id);
@@ -586,16 +595,16 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       // d3.scaleLinear().domain(historyArray).range([35, parseFloat(this.compareView.nativeElement.scrollWidth) - this.nodeWidth - 15]);
       let compareShiftHistoryScale = d3.scaleBand().domain(shiftHistories)
       .range([this.elementPadding, this.scaleHistory(this.nodeHistory[this.nodeHistory.length-1].depth) + this.scaleHistory.bandwidth()])
-      .paddingInner(.9)
+      .paddingInner(this.innerPadding)
 
       let compareB = d3.select("#comparisonView").append("g").classed("compareB", true);
       this.renderQualityView(this.shiftNodeHistory, compareShiftHistoryScale, compareB, true);
     }
     let compareA = d3.select("#comparisonView").append("g").classed("compareA", true);
-    let compareHistoryScale = d3.scaleBand().domain(histories)
-      .range([this.elementPadding, this.scaleHistory(this.nodeHistory[this.nodeHistory.length-1].depth) + this.scaleHistory.bandwidth()])
-      .paddingInner(.9);
-    this.renderQualityView(this.nodeHistory, compareHistoryScale, compareA, true);
+    // let compareHistoryScale = d3.scaleBand().domain(histories)
+    //   .range([this.elementPadding, this.scaleHistory(this.nodeHistory[this.nodeHistory.length-1].depth) + this.scaleHistory.bandwidth()])
+    //   .paddingInner(this.innerPadding);
+    this.renderQualityView(this.nodeHistory, this.scaleHistory, compareA, true);
   }
 
   private linkIssues(historyNodes: any[]): any[] {
@@ -635,5 +644,9 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
            + "L" + x0 + "," + y0;
     // }
     // return null;
+  }
+
+  toggleShowDetail() {
+    this.showDetail = !this.showDetail;
   }
 }
