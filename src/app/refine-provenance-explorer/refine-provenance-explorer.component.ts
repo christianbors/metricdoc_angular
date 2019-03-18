@@ -150,46 +150,47 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                     return 0.2;
                   })
                   
-              // this.sankeyLinks.append("svg:foreignObject")
-              //     .attr('x', (d:any) => {
-              //       if (this.scaleHistory(d.source.depth) && this.scaleHistory(d.target.depth))
-              //         return this.scaleHistory(d.target.depth) - (this.scaleHistory(d.target.depth) - this.scaleHistory(d.source.depth) - this.scaleHistory.bandwidth())/2;
-              //       else if (this.scaleHistory(d.source.depth) && this.scaleFuture(d.target.depth))
-              //         return this.scaleFuture(d.target.depth) - (this.scaleFuture(d.target.depth) - this.scaleHistory(d.source.depth) - this.scaleHistory.bandwidth())/2;
-              //       return this.scaleFuture(d.target.depth) - (this.scaleFuture(d.target.depth) - this.scaleFuture(d.source.depth) - this.scaleFuture.bandwidth())/2;
-              //     })
-              //     .attr('y', (d:any) => {
-              //       return d3.interpolateNumber(d.source.y1, d.target.y1)(0.5);
-              //     })
-              //     .attr('text-anchor', 'middle')
-              //     .attr('dominant-baseline', 'central')
-              //     .attr('font-family', 'Font Awesome 5 Free')
-              //     .attr('fill', 'black')
-              //     .attr('opacity', (d:any) => {
-              //       if (!this.scaleHistory(d.target.depth))
-              //         return 0;
-              //       return 1;
-              //     })
-              //     .attr('font-weight', 900)
-              //     .attr('font-size', '1em')
-              //     .attr('overflow', 'visible')
-              //   .html((d:any) => {
-              //     if(this.provenanceOverlayModel.provenance.activity["facet:" + d.activity.replace("change:", "")]) {
-              //       return '<i class="fa fa-1x fa-chart-bar"></i>';
-              //     }
-              //   });
+              this.sankeyLinks.append("svg:foreignObject")
+                  .attr('x', (d:any) => {
+                    if(this.scaleHistory(d.source.depth) && this.scaleHistory(d.target.depth))
+                      return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleHistory(d.target.depth) - this.nodeWidth/2)(.5);
+                  })
+                  .attr('y', (d:any) => {
+                    return d.source.y1;
+                  })
+                  .attr('text-anchor', 'middle')
+                  .attr('dominant-baseline', 'central')
+                  .attr('font-family', 'Font Awesome 5 Free')
+                  .attr('fill', 'black')
+                  .attr('opacity', (d:any) => {
+                    if (!this.scaleHistory(d.target.depth))
+                      return 0;
+                    return 1;
+                  })
+                  .attr('font-weight', 900)
+                  .attr('font-size', '1em')
+                  .attr('overflow', 'visible')
+                .html((d:any) => {
+                  if(this.provenanceOverlayModel.provenance.activity["facet:" + d.activity.replace("change:", "")]) {
+                    return '<i class="fa fa-1x fa-chart-bar"></i>';
+                  }
+                });
 
               this.sankeyLinks.on("mouseover", (data:any) => {
-                if(this.provenanceOverlayModel.provenance.activity["facet:" + data.activity.replace("change:", "")]) {
-                  let text = Object.entries(this.provenanceOverlayModel.provenance.activity["facet:" + data.activity.replace("change:", "")])
+                let id = data.activity.replace("change:", "");
+                if(this.provenanceOverlayModel.provenance.activity["facet:" + id]) {
+                  let facet = this.provenanceOverlayModel.provenance.activity["facet:" + id];
+                  let text = Object.entries(facet)
                     .map((d:any) => { 
+                      if (d[0].includes("facet:_"))
+                        return d[0].replace("facet:_", "") + ": " + d[1].$
                       if (d[0].includes("facet:"))
                         return d[0].replace("facet:", "") + ": " + d[1].$
                     }).filter(d => d != null);
                 div.transition()
                   .duration(100)
                   .style("opacity", .9);
-                div.html("<span><b>Filter</b></span><br><span>" + text.join("<br>") + "</span>")
+                div.html("<span><b>Filter " + facet["other:" + id].$ + " rows</b></span><br><span>" + text.join("<br>") + "</span>")
                   .style("left", (d3.event.pageX) + "px")
                   .style("top", (d3.event.pageY - 28) + "px");
                   return text;
@@ -340,23 +341,6 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   buildGraph(provenanceOverlayModel: any):any {
     let links:any[] = [];
 
-    // let historyEntries = Object.keys(provenanceOverlayModel.provenance.entity).filter((key: string) => {
-    //   if (key.includes('history_entry')) {
-    //     provenanceOverlayModel.provenance.entity[key].depth = 0;
-    //     return true;
-    //   } else {
-    //     return false;
-    //   }
-    // });
-
-    // for (let key of Object.keys(provenanceOverlayModel.provenance.wasDerivedFrom)) {
-    //   if (provenanceOverlayModel.provenance.wasDerivedFrom[key]["prov:usedEntity"]) {
-    //     let used = provenanceOverlayModel.provenance.wasDerivedFrom[key]["prov:usedEntity"];
-    //     let gen = provenanceOverlayModel.provenance.wasDerivedFrom[key]["prov:generatedEntity"];
-    //     provenanceOverlayModel.provenance.entity[gen].depth = provenanceOverlayModel.provenance.entity[used].depth + 1;
-    //   }
-    // }
-
     // nodes are the history entries, stored as entities
     let nodeEntries:any[] = Object.entries(provenanceOverlayModel.provenance.entity).filter((entity: any) => entity[0].includes('history_entry'));
 
@@ -368,29 +352,31 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
       let facetActivity = Object.values(provenanceOverlayModel.provenance.used).find((used:any) => used["prov:entity"] === wdf["prov:usedEntity"]);
 
+      // facets are stored as nodes as well
       let metrics: any[];
-      if (facetActivity) {
-        links.push({
-          source: wdf["prov:usedEntity"],
-          target: facetActivity["prov:activity"],//wdf["prov:generatedEntity"],
-          generated: provenanceOverlayModel.provenance.entity[wdf["prov:generatedEntity"]],
-          out: null,
-          in: null,
-          value: 1,
-          // depth: Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).indexOf(wdf),
-          activity: wdf["prov:activity"]
-        });
-        links.push({
-          source: facetActivity["prov:activity"],//wdf["prov:usedEntity"],
-          target: wdf["prov:generatedEntity"],
-          generated: provenanceOverlayModel.provenance.entity[wdf["prov:generatedEntity"]],
-          out: null,
-          in: null,
-          value: 1,
-          // depth: Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).indexOf(wdf),
-          activity: wdf["prov:activity"]
-        })
-      } else if (wdf["prov:usedEntity"] && !wdf["prov:generatedEntity"].includes("quality")) {
+      // if (facetActivity) {
+      //   links.push({
+      //     source: wdf["prov:usedEntity"],
+      //     target: facetActivity["prov:activity"],//wdf["prov:generatedEntity"],
+      //     generated: provenanceOverlayModel.provenance.entity[wdf["prov:generatedEntity"]],
+      //     out: null,
+      //     in: null,
+      //     value: .5,
+      //     // depth: Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).indexOf(wdf),
+      //     activity: wdf["prov:activity"]
+      //   });
+      //   links.push({
+      //     source: facetActivity["prov:activity"],//wdf["prov:usedEntity"],
+      //     target: wdf["prov:generatedEntity"],
+      //     generated: provenanceOverlayModel.provenance.entity[wdf["prov:generatedEntity"]],
+      //     out: null,
+      //     in: null,
+      //     value: .5,
+      //     // depth: Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).indexOf(wdf),
+      //     activity: wdf["prov:activity"]
+      //   })
+      // } else 
+      if (wdf["prov:usedEntity"] && !wdf["prov:generatedEntity"].includes("quality")) {
         links.push({
           source: wdf["prov:usedEntity"],
           target: wdf["prov:generatedEntity"],
@@ -432,21 +418,21 @@ export class RefineProvenanceExplorerComponent implements OnInit {
       let histInfo = this.provenanceOverlayModel.provenance.entity["project_info:dataset"]["other:" + entry[0].replace("history_entry:","")];
       if(histInfo)
         rowSize = parseInt(histInfo.$);
-      nodes.push({key: entry[0], value: rowSize, entity: entry[1]});
+      nodes.push({key: entry[0], value: rowSize, entity: entry[1], depth: 2});
     }
 
-    for (let activity of Object.entries(this.provenanceOverlayModel.provenance.activity).filter((a: any) => a[0].includes("facet:"))) {
-      let id = activity[0].replace("facet:", "");
-      let rowSize = 0;
-      if (activity[1]["other:"+id])
-        rowSize = parseInt(activity[1]["other:"+id].$);
+    // for (let activity of Object.entries(this.provenanceOverlayModel.provenance.activity).filter((a: any) => a[0].includes("facet:"))) {
+    //   let id = activity[0].replace("facet:", "");
+    //   let rowSize = 0;
+    //   if (activity[1]["other:"+id])
+    //     rowSize = parseInt(activity[1]["other:"+id].$);
 
-      nodes.push({
-        key: activity[0],
-        value: rowSize,
-        activity: activity[1]
-      })
-    }
+    //   nodes.push({
+    //     key: activity[0],
+    //     value: rowSize,
+    //     activity: activity[1]
+    //   })
+    // }
 
     let graph = {
       nodes: nodes,
@@ -457,6 +443,8 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
   linkSkewed(d: any): any {
     var curvature = .6;
+    let id = parseInt(d.activity.replace("change:",""));
+    let facet = this.provenanceOverlayModel.provenance.activity["facet:" + id];
     // var x0 = d.source.x1,
     //     x1 = d.target.x0;
     let x0 = this.scaleHistory(d.source.depth) + this.scaleHistory.bandwidth(),
@@ -471,21 +459,63 @@ export class RefineProvenanceExplorerComponent implements OnInit {
     if (!x1)
       x1 = this.scaleFuture(d.target.depth);
     
-
     let xi = d3.interpolateNumber(x0, x1),
         x2 = xi(curvature),
         x3 = xi(1 - curvature),
         y0 = d.source.y0,
         y1 = d.target.y0;
-    return "M" + x0 + "," + y0
-         + "C" + x2 + "," + y0
-         + " " + x3 + "," + y1
-         + " " + x1 + "," + y1
-         + "L" + x1 + "," + (y1+ (d.target.y1 - d.target.y0))
-         + "C" + x3 + "," + (y1+ (d.target.y1 - d.target.y0))
-         + " " + x2 + "," + (y0+ (d.source.y1 - d.source.y0))
-         + " " + x0 + "," + (y0+ (d.source.y1 - d.source.y0))
-         + "L" + x0 + "," + y0;
+
+    let path =  "M" + x0 + "," + y0
+    
+    if (facet) {
+      let heightRatio = parseInt(facet["other:"+id].$)/d.source.value;
+      path += "C" + xi(.2) + "," + y0
+        + " " + xi(.3) + "," + (y0+ (d.source.y1 - d.source.y0)*(1-heightRatio))
+        + " " + xi(.5) + "," + (y0+ (d.source.y1 - d.source.y0)*(1-heightRatio))
+        + "L" + xi(.5) + "," + (y0+ (d.source.y1 - d.source.y0)*(1-heightRatio))
+        + "C" + xi(.7) + "," + (y0+ (d.source.y1 - d.source.y0)*(1-heightRatio))
+        + " " + xi(.8) + "," + y1
+        + " " + x1 + "," + y1
+        + "L" + x1 + "," + (y1+ (d.target.y1 - d.target.y0))
+        + "C" + xi(.8) + "," + (y1+ (d.target.y1 - d.target.y0))
+        + " " + xi(.7) + "," + (y0+ (d.source.y1 - d.source.y0))
+        + " " + xi(.5) + "," + (y0+ (d.source.y1 - d.source.y0))
+        + "L" + xi(.5) + "," + (y0+ (d.source.y1 - d.source.y0));
+    }
+    // if (facet) {
+    //   // facet calculations
+    //   let xMiddle = xi(.5);
+    //   x2 = xi(curvature*.5),
+    //   x3 = xi(1 - curvature*.5),
+    //   // console.log((y1-y0)*(parseInt(facet["other:"+id].$)/d.source.value));
+    //   // console.log((y1+(y1-y0)*(parseInt(facet["other:"+id].$)/d.source.value)));
+    //   path += "C" + x2 + "," + y0
+    //     + " " + xMiddle + "," + (y0+(d.source.y1-d.source.y0)*(parseInt(facet["other:"+id].$)/d.source.value)) //(x2 + this.scaleHistory.bandwidth()/2)
+    //     + " " + x1 + "," + y1;
+    // } else {
+    else{
+      path += "C" + x2 + "," + y0
+        + " " + x3 + "," + y1
+        + " " + x1 + "," + y1
+        + "L" + x1 + "," + (y1+ (d.target.y1 - d.target.y0))
+        + "C" + x3 + "," + (y1+ (d.target.y1 - d.target.y0))
+        + " " + x2 + "," + (y0+ (d.source.y1 - d.source.y0))
+        + " " + x0 + "," + (y0+ (d.source.y1 - d.source.y0))
+        + "L" + x0 + "," + y0;
+    }
+    // }
+    return path
+        + " " + x0 + "," + (y0+ (d.source.y1 - d.source.y0))
+        + "L" + x0 + "," + y0;
+    // return "M" + x0 + "," + y0
+    //      + "C" + x2 + "," + y0
+    //      + " " + x3 + "," + y1
+    //      + " " + x1 + "," + y1
+    //      + "L" + x1 + "," + (y1+ (d.target.y1 - d.target.y0))
+    //      + "C" + x3 + "," + (y1+ (d.target.y1 - d.target.y0))
+    //      + " " + x2 + "," + (y0+ (d.source.y1 - d.source.y0))
+    //      + " " + x0 + "," + (y0+ (d.source.y1 - d.source.y0))
+    //      + "L" + x0 + "," + y0;
   }
 
   determineNodeHistory(historyId: any):any[] {
@@ -517,7 +547,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
   setSankeyScale() {
     // create scales based on node depths
-    let depths:any[] = this.sankeyDiag().nodes.filter(node => {
+    let depths:any[] = this.sankeyDiag().nodes.filter((node: any, i: number, nodesArray: any[]) => {
       let mapNode = this.nodeHistory.find((mapNode:any) => {
         return mapNode.id === parseInt(node.key.replace("history_entry:", "")) || mapNode.id === parseInt(node.key.replace("facet:", ""));
       });
@@ -592,11 +622,8 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
       this.sankeyLinks.selectAll("foreignObject")
         .attr('x', (d:any) => {
-          if (this.scaleHistory(d.source.depth) && this.scaleHistory(d.target.depth))
-            return this.scaleHistory(d.target.depth) - (this.scaleHistory(d.target.depth) - this.scaleHistory(d.source.depth) - this.scaleHistory.bandwidth())/2;
-          else if (this.scaleHistory(d.source.depth) && this.scaleFuture(d.target.depth))
-            return this.scaleFuture(d.target.depth) - (this.scaleFuture(d.target.depth) - this.scaleHistory(d.source.depth) - this.scaleHistory.bandwidth())/2;
-          return this.scaleFuture(d.target.depth) - (this.scaleFuture(d.target.depth) - this.scaleFuture(d.source.depth) - this.scaleFuture.bandwidth())/2;
+          if(this.scaleHistory(d.source.depth) && this.scaleHistory(d.target.depth))
+            return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleHistory(d.target.depth) - this.nodeWidth/2)(.5);
         })
         .attr('opacity', (d:any) => {
           if (!this.scaleHistory(d.target.depth))
