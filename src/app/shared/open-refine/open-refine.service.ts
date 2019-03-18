@@ -138,6 +138,7 @@ export class OpenRefineService {
 
   getRows (projectId: any, first: any, limit: any) {
     let params = this.initializeParams(projectId);
+    params.set('project', projectId);
   	params.set('start', first);
   	params.set('limit', limit);
   	return this.http.get(this.openRefineServerUrl + 'core/get-rows', { search: params })
@@ -155,7 +156,20 @@ export class OpenRefineService {
     }
     return this.http.post(this.openRefineServerUrl + 'metric-doc/updateMetric', params)
       .map(this.extractData)
-      .catch(this.handleError);
+      .catch(this.handleError).subscribe();
+  }
+
+  deleteMetric (projectId: any, metric: any, column: any) {
+    let params = this.initializeParams(projectId)
+    params.set('metricName', metric.name);
+    if(column instanceof Array) {
+      params.set('columns', JSON.stringify(column));
+    } else {
+      params.set('column', column);
+    }
+    return this.http.post(this.openRefineServerUrl + 'metric-doc/deleteMetric', params)
+      .map(this.extractData)
+      .catch(this.handleError).subscribe();
   }
 
   evaluateMetrics (projectId: string) :Observable<MetricsOverlayModel> {
@@ -179,7 +193,7 @@ export class OpenRefineService {
     params.set('selection', JSON.stringify(selection));
     return this.http.post(this.openRefineServerUrl + 'metric-doc/evaluateSelectedMetric', params)
       .map(this.extractData)
-      .catch(this.handleError);
+      .catch(this.handleError).subscribe();
   }
 
   previewExpression (projectId: any, expression: string, cellIdx: any) {
@@ -191,13 +205,13 @@ export class OpenRefineService {
     params.set('cellIndex', cellIdx);
     return this.http.post(this.openRefineServerUrl + 'core/preview-expression', params)
       .map(this.extractData)
-      .catch(this.handleError);
+      .catch(this.handleError).subscribe();
   }
 
   getMetricDocFunctionsOverview () {
     return this.http.get(this.openRefineServerUrl + 'metric-doc/get-metricdoc-language-info')
       .map(this.extractData)
-      .catch(this.handleError);
+      .catch(this.handleError).subscribe();
   }
 
   getProvenanceJSON(path: string) {

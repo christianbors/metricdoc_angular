@@ -63,6 +63,7 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   selectedMetrics: Metric[];
   selectedColumns: string[];
   highlightedRows: number[];
+  contextColumn: any;
 
   updated: boolean = false;
   changeDetected: boolean = false;
@@ -130,6 +131,7 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   }
 
   private onContextMenu($event: MouseEvent, item: any, metric: any): void {
+    this.contextColumn = item.columnName;
     let metricContext = item.metrics[metric];
     if (metricContext) {
       this.contextMenuService.show.next({
@@ -266,6 +268,7 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
 
   deleteMetric(metric: Metric) {
     console.log('test delete metric' + metric.name);
+    this.openRefineService.deleteMetric(this.projectId, metric, this.contextColumn);
   }
 
   private calculateColWidths() {
