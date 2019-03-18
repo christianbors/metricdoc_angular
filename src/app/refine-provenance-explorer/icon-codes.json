@@ -30,5 +30,6 @@
     "ReconClearSimilarCellsOperation": "fa-buromobelexperte",
     "ReconCopyAcrossColumnsOperation": "fa-buromobelexperte",
     "ExtendDataOperation": "fa-external-link-alt",
-    "MetricsExtensionOperation": "fa-external-link-alt"
+    "MetricsExtensionOperation": "fa-external-link-alt",
+    "CellChange": "fa-edit"
   }

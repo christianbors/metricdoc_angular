@@ -140,7 +140,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
               this.sankeyLinks.append("path")
                   .attr("d", (d:any) => this.linkSkewed(d))
                   .attr("class", (d:any) => { 
-                    return "activity" + d.activity.replace("change:","");
+                    return "activity" + d.target.key.replace("history_entry:","");
                   })
                   // .attr("stroke", d => "grey")
                   .attr("fill", d => "grey")
@@ -171,13 +171,13 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .attr('font-size', '1em')
                   .attr('overflow', 'visible')
                 .html((d:any) => {
-                  if(this.provenanceOverlayModel.provenance.activity["facet:" + d.activity.replace("change:", "")]) {
+                  if(this.provenanceOverlayModel.provenance.activity["facet:" + d.target.key.replace("history_entry:","")]) {
                     return '<i class="fa fa-1x fa-chart-bar"></i>';
                   }
                 });
 
               this.sankeyLinks.on("mouseover", (data:any) => {
-                let id = data.activity.replace("change:", "");
+                let id = data.source.key.replace("history_entry:","");
                 if(this.provenanceOverlayModel.provenance.activity["facet:" + id]) {
                   let facet = this.provenanceOverlayModel.provenance.activity["facet:" + id];
                   let text = Object.entries(facet)
@@ -190,10 +190,12 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                 div.transition()
                   .duration(100)
                   .style("opacity", .9);
-                div.html("<span><b>Filter " + facet["other:" + id].$ + " rows</b></span><br><span>" + text.join("<br>") + "</span>")
-                  .style("left", (d3.event.pageX) + "px")
-                  .style("top", (d3.event.pageY - 28) + "px");
-                  return text;
+                if(facet["other:" + id]) {
+                  div.html("<span><b>Filter " + facet["other:" + id].$ + " rows</b></span><br><span>" + text.join("<br>") + "</span>")
+                    .style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY - 28) + "px");
+                }
+                return text;
                 }
               })
               .on("mouseout", (d:any) => {
@@ -350,32 +352,6 @@ export class RefineProvenanceExplorerComponent implements OnInit {
       if (endValue == 0)
         value = 1;
 
-      let facetActivity = Object.values(provenanceOverlayModel.provenance.used).find((used:any) => used["prov:entity"] === wdf["prov:usedEntity"]);
-
-      // facets are stored as nodes as well
-      let metrics: any[];
-      // if (facetActivity) {
-      //   links.push({
-      //     source: wdf["prov:usedEntity"],
-      //     target: facetActivity["prov:activity"],//wdf["prov:generatedEntity"],
-      //     generated: provenanceOverlayModel.provenance.entity[wdf["prov:generatedEntity"]],
-      //     out: null,
-      //     in: null,
-      //     value: .5,
-      //     // depth: Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).indexOf(wdf),
-      //     activity: wdf["prov:activity"]
-      //   });
-      //   links.push({
-      //     source: facetActivity["prov:activity"],//wdf["prov:usedEntity"],
-      //     target: wdf["prov:generatedEntity"],
-      //     generated: provenanceOverlayModel.provenance.entity[wdf["prov:generatedEntity"]],
-      //     out: null,
-      //     in: null,
-      //     value: .5,
-      //     // depth: Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).indexOf(wdf),
-      //     activity: wdf["prov:activity"]
-      //   })
-      // } else 
       if (wdf["prov:usedEntity"] && !wdf["prov:generatedEntity"].includes("quality")) {
         links.push({
           source: wdf["prov:usedEntity"],
@@ -385,7 +361,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
           in: null,
           value: 1,
           // depth: Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).indexOf(wdf),
-          activity: wdf["prov:activity"]
+          activity: wdf
         });
       }
     }
@@ -443,7 +419,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
   linkSkewed(d: any): any {
     var curvature = .6;
-    let id = parseInt(d.activity.replace("change:",""));
+    let id = parseInt(d.target.key.replace("history_entry:",""));
     let facet = this.provenanceOverlayModel.provenance.activity["facet:" + id];
     // var x0 = d.source.x1,
     //     x1 = d.target.x0;
@@ -467,7 +443,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
     let path =  "M" + x0 + "," + y0
     
-    if (facet) {
+    if (facet && facet["other:"+id]) {
       let heightRatio = parseInt(facet["other:"+id].$)/d.source.value;
       path += "C" + xi(.2) + "," + y0
         + " " + xi(.3) + "," + (y0+ (d.source.y1 - d.source.y0)*(1-heightRatio))
@@ -647,8 +623,6 @@ export class RefineProvenanceExplorerComponent implements OnInit {
     for (let node of hist) {
       let idString = node.id;
       d3.select("svg.provGraph g.nodes").select("rect#history_entry" + idString)
-        .classed(classString, true);
-      d3.select("svg.provGraph g.nodes").select("rect#facet" + idString)
         .classed(classString, true);
         // .attr('stroke', 'gray')
         // .attr('stroke-width', '2px');
