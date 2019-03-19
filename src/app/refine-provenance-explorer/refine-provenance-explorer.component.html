@@ -1,3 +1,8 @@
+<h3>Quality Metrics per Transformation Step
+  <button class="btn btn-primary btn-sm" 
+    (click)="toggleShowDetail(); $event.stopPropagation(); $event.preventDefault()">Toggle Detail
+  </button>
+</h3>
 <app-quality-provenance-vis #qualityProvenanceVis 
   [pageWidth]="pageWidth" 
   [componentHeight]="detailHeight"
@@ -10,6 +15,7 @@
   [scaleHistory]= "scaleHistory"
   [sankeyDiag]="sankeyDiag"
   [qualityViewWidth]="qualityViewWidth"
+  [showDetail]="showDetail"
   [detailViewWidth]="detailViewWidth"></app-quality-provenance-vis>
 <svg #provGraph class="provGraph" [style.width.%]="pageWidth" [style.height.%]="sankeyHeight"></svg>
 <context-menu #qualityMetric>

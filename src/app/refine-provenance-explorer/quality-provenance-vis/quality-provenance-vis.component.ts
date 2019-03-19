@@ -25,6 +25,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   @Input() sankeyDiag: any;
   @Input() qualityViewWidth: number;
   @Input() detailViewWidth: number;
+  @Input() showDetail: number;
 
   currentHistId: any;
   qualityCompareViewWidth: number = 0;
@@ -39,7 +40,6 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   @ViewChild('qualityComparison')
   compareView:ElementRef;
   div;
-  showDetail: boolean = false;
 
   errorMessage;
   uniqueMetrics: string[] = [];
@@ -90,7 +90,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       if (this.provenanceOverlayModel && this.detailIssueView)
         this.renderIssueSelectionView();
     }
-    if (changes.detailViewWidth && this.provenanceOverlayModel)
+    if ((changes.detailViewWidth || changes.showDetail) && this.provenanceOverlayModel)
       this.renderIssueSelectionView();
     if (changes.detailIssueView)
       this.renderIssueSelectionView();
@@ -523,6 +523,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
 
   private renderIssueSelectionView() {
     let translX = 25;
+    let detailViewSvg = d3.select("#qualityComparison svg");
     d3.select('#issueView g.axis').remove();
     let rows:number = this.provenanceOverlayModel.provenance.entity["project_info:dataset"]["other:" + this.histId].$;
     this.renderIssueViewForHistId(this.histId, d3.select("#issueView"), translX, rows, this.detailViewWidth - 25);
@@ -620,19 +621,13 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   }
 
   private linkSkewed(d: any, yFunction: any, x0: any, x1:any): any {
-    // if (parseFloat(d.from.data.value) != parseFloat(d.to.data.value)) {
       var curvature = .6;
-      // let x0 = scale(d.from.data.historyEntry.id) + this.nodeWidth,
-          // x1 = scale(d.to.data.historyEntry.id) + scale.bandwidth() - this.nodeWidth,
+
       let xi = d3.interpolateNumber(x0, x1),
           x2 = xi(curvature),
           x3 = xi(1 - curvature),
           y0 = yFunction(d.from[0]),
           y1 = yFunction(d.to[0]);
-           // + "L" + x1 + "," + (y1+ (d.target.y1 - d.target.y0))
-           // + "C" + x3 + "," + (y1+ (d.target.y1 - d.target.y0))
-           // + " " + x2 + "," + (y0+ (d.source.y1 - d.source.y0))
-           // + " " + x0 + "," + (y0+ (d.source.y1 - d.source.y0))
       return "M" + x0 + "," + y0
            + "C" + x2 + "," + y0
            + " " + x3 + "," + y1
@@ -644,9 +639,5 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
            + "L" + x0 + "," + y0;
     // }
     // return null;
-  }
-
-  toggleShowDetail() {
-    this.showDetail = !this.showDetail;
   }
 }

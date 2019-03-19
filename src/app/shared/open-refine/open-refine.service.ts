@@ -211,7 +211,7 @@ export class OpenRefineService {
   getMetricDocFunctionsOverview () {
     return this.http.get(this.openRefineServerUrl + 'metric-doc/get-metricdoc-language-info')
       .map(this.extractData)
-      .catch(this.handleError).subscribe();
+      .catch(this.handleError);
   }
 
   getProvenanceJSON(path: string) {

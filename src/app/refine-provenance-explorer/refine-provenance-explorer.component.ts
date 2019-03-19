@@ -36,6 +36,8 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
   // percentage widths
   pageWidth: number = 100;
+  provWidth: number = 100;
+  detailWidth: number = 20;
   detailHeight: number = 40;
   sankeyHeight: number = 25;
   refineHeight: number = 35;
@@ -47,10 +49,13 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   elementPadding: number = 35;
   innerPadding: number = .8;
 
+  showDetail: boolean = false;
+
   @ViewChild('qualityMetric') public metricMenu: ContextMenuComponent;
   @ViewChild('issue') public issueMenu: ContextMenuComponent;
 
-  @ViewChild('provGraph') provGraph:ElementRef;
+  //@ViewChild('provGraph') 
+  provGraph:ElementRef;
 
   // d3 sankey library
   d3Sankey;
@@ -93,7 +98,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
           this.openRefineProject = openRefineProject;
           this.provenanceOverlayModel = openRefineProject.overlayModels['qualityProvenance'];
 
-          if(this.provenanceOverlayModel) {
+          if(this.provenanceOverlayModel && this.provGraph) {
             let graph = this.buildGraph(this.provenanceOverlayModel);
             this.histId = this.provenanceOverlayModel.currentHistoryEntry.localPart;
 
@@ -523,6 +528,11 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
   setSankeyScale() {
     // create scales based on node depths
+    let maxDepth = 0;
+    this.sankeyDiag().nodes.forEach((node: any) => {
+      if (node.depth > maxDepth)
+        maxDepth = node.depth;
+    });
     let depths:any[] = this.sankeyDiag().nodes.filter((node: any, i: number, nodesArray: any[]) => {
       let mapNode = this.nodeHistory.find((mapNode:any) => {
         return mapNode.id === parseInt(node.key.replace("history_entry:", "")) || mapNode.id === parseInt(node.key.replace("facet:", ""));
@@ -534,8 +544,9 @@ export class RefineProvenanceExplorerComponent implements OnInit {
         // return .includes(parseInt(node.key.replace("history_entry:","")));
       })
       .map(node => node.depth).sort(this.numericSort);
-    depths.push(-1);
-    this.scaleHistory = d3.scaleBand().domain(depths).range([this.elementPadding, parseFloat(this.provGraph.nativeElement.scrollWidth)]).paddingInner(this.innerPadding);
+    if (depths[depths.length-1] < maxDepth)
+      depths.push(-1);
+    this.scaleHistory = d3.scaleBand().domain(depths).range([this.elementPadding, parseFloat(this.provGraph.nativeElement.scrollWidth)*(this.provWidth/100)]).paddingInner(this.innerPadding);
 
     let depthsFuture = [];
     depthsFuture.push(-1);
@@ -544,11 +555,17 @@ export class RefineProvenanceExplorerComponent implements OnInit {
         depthsFuture.push(node.depth);
     });
     depthsFuture.sort(this.numericSort);
-    this.scaleFuture = d3.scaleBand().domain(depthsFuture).range([this.scaleHistory(depths[depths.length-2]) + this.scaleHistory.bandwidth(), this.scaleHistory(depths[depths.length-1])]).paddingInner(this.innerPadding);
+    this.scaleFuture = d3.scaleBand().domain(depthsFuture).range([this.scaleHistory(depths[depths.length-2]) + this.scaleHistory.bandwidth(), parseFloat(this.provGraph.nativeElement.scrollWidth)]).paddingInner(this.innerPadding);
     // let nodes = d3.select("svg.provGraph").selectAll("g.nodes").selectAll("g.history_nodes");
 
-    this.qualityViewWidth = this.scaleHistory(depths[depths.length-2]) + this.scaleHistory.bandwidth();
-    this.detailViewWidth = this.scaleHistory(depths[depths.length-1]) - this.scaleHistory(depths[depths.length-2]) - this.scaleHistory.bandwidth();
+    if(depths[depths.length-1] === -1) {
+      this.qualityViewWidth = this.scaleHistory(depths[depths.length-2]) + this.scaleHistory.bandwidth();
+      this.detailViewWidth = parseFloat(this.provGraph.nativeElement.scrollWidth) - this.scaleHistory(depths[depths.length-2]) - 2*this.scaleHistory.bandwidth();
+    } else {
+      this.qualityViewWidth = this.scaleHistory(depths[depths.length-1]) + this.scaleHistory.bandwidth();
+      this.detailViewWidth = parseFloat(this.provGraph.nativeElement.scrollWidth)*(this.detailWidth/100) - this.scaleHistory.bandwidth();
+    }
+
     if (this.sankeyNodes) {
       this.sankeyNodes.selectAll("rect")
         .attr("x", (d:any) => {
@@ -660,6 +677,24 @@ export class RefineProvenanceExplorerComponent implements OnInit {
     //   event: $event,
     //   item: item
     // });
+  }
+  
+  @ViewChild('provGraph') set content(content: ElementRef) {
+    this.provGraph = content;
+    console.log("set graph");
+    if(this.provGraph && this.provenanceOverlayModel) {
+      this.setSankeyScale();
+    }
+  }
+
+  toggleShowDetail() {
+    this.showDetail = !this.showDetail;
+    if (this.showDetail)
+      this.provWidth = this.pageWidth - this.detailWidth;
+    else 
+      this.provWidth = this.pageWidth;
+    this.nodeHistory = this.determineNodeHistory(this.histId);
+    this.setSankeyScale();
   }
 
   private numericSort(a: number, b: number): number {
