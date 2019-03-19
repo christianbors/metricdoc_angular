@@ -5,6 +5,8 @@ import { OpenRefineService }         from './../../shared/open-refine/open-refin
 import * as d3 from 'd3';
 import * as d3Transform from 'd3-transform';
 
+import * as iconCodes  from '../icon-codes.json';
+
 @Component({
   selector: 'app-quality-provenance-vis',
   encapsulation: ViewEncapsulation.None,
@@ -27,16 +29,18 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   @Input() detailViewWidth: number;
   @Input() showDetail: number;
 
-  currentHistId: any;
   qualityCompareViewWidth: number = 0;
   elementPadding: number = 35;
   innerPadding: number = .8;
   maxRowNumber: number;
   transition;
 
+  iconWidth:number = 16;
+
   // @ViewChild('qualityView')
   // svgQualityView:ElementRef;
   detailIssueView:ElementRef;
+  issueViewOffset:number;
   @ViewChild('qualityComparison')
   compareView:ElementRef;
   div;
@@ -49,8 +53,11 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
 
   @ViewChild('issueView') set content(content: ElementRef) {
     this.detailIssueView = content;
-    if (this.detailIssueView && this.provenanceOverlayModel)
+    if (this.detailIssueView && this.provenanceOverlayModel) {
+      // this.issueViewOffset = this.elementPadding + this.compareView.nativeElement.scrollWidth - this.detailViewWidth;
+      this.scaleComparison();
       this.renderIssueSelectionView();
+    }
  }
 
   constructor() { 
@@ -188,8 +195,8 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
 
     let arr = Array.prototype.concat.apply([], stack[stack.length-1]);
     let maxVal = Math.max.apply(Math, arr);
-    // max scale needs to be determined
-    let y = d3.scaleLinear().rangeRound([this.compareView.nativeElement.scrollHeight - 20, 0]).domain([0, maxVal]).nice();
+    // max scale needs to be determined // we also leave space for multiple selection guiding icons
+    let y = d3.scaleLinear().rangeRound([this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding, 0]).domain([0, maxVal]).nice();
 
     // let metricColorScale = d3.scaleSequential(d3.interpolateViridis);
     if(this.uniqueMetrics.length == 0) {
@@ -387,7 +394,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   
     let scaleXColumn = d3.scaleBand()
       .domain(issues.map(issuesEntry => issuesEntry.col))
-      .range([translate, elementWidth]); //.padding(0.05)
+      .range([translate, translate + elementWidth]); //.padding(0.05)
     // let maxRows:number[] = Object.entries(this.provenanceOverlayModel.provenance.entity["project_info:dataset"]).map((el: any) => {
     //   // let histIds = this.nodeHistory.map(d => d.id);
     //   if (this.nodeHistory && this.nodeHistory.map(d => parseInt(d.id)).includes(parseInt(el[0].replace("other:", ""))) && el[1].type === "project_info:rowSize")
@@ -397,7 +404,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
     
     let scaleYRows = d3.scaleLinear()
       .domain([0, rows])
-      .range([15, this.compareView.nativeElement.scrollHeight - 20]);
+      .range([15, this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding]);
 
     // let issueView = 
     //   .data(issues);
@@ -522,20 +529,50 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
 
 
   private renderIssueSelectionView() {
-    let translX = 25;
+    // let translX = 25 + this.compareView.nativeElement.scrollWidth - this.detailViewWidth;
     let detailViewSvg = d3.select("#qualityComparison svg");
     d3.select('#issueView g.axis').remove();
     let rows:number = this.provenanceOverlayModel.provenance.entity["project_info:dataset"]["other:" + this.histId].$;
-    this.renderIssueViewForHistId(this.histId, d3.select("#issueView"), translX, rows, this.detailViewWidth - 25);
-    d3.select("#issueView").attr("transform", "translate(" + translX + ",0)");
+    this.renderIssueViewForHistId(this.histId, d3.select("#issueView"), this.issueViewOffset, rows, this.detailViewWidth - 25);
+    d3.select("#issueView").attr("transform", "translate(" + this.issueViewOffset + ",0)");
     let scaleYRows = d3.scaleLinear()
       .domain([0, rows])
-      .range([15, this.compareView.nativeElement.scrollHeight - 20]);
+      .range([15, this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding]);
     let yAxis = d3.axisLeft(scaleYRows);
     d3.select('#issueView g.axis').append("g")
       .classed("y-axis", true)
-      .attr("transform", "translate(" + translX + ",0)")
+      .attr("transform", "translate(" + this.issueViewOffset + ",0)")
       .call(yAxis);
+  }
+
+  private renderHistoryNodes(element: any, history: any[], scale: any, classed: string) {
+    element.append("rect")
+        .attr('x', (d:any) => scale(history[0].depth))
+        .attr('y', (d:any) => this.compareView.nativeElement.scrollHeight - 20 - (this.elementPadding - this.iconWidth))
+        .attr('height', this.elementPadding)
+        .attr('width', scale(history[history.length-1].depth) - scale(history[0].depth) + scale.bandwidth())
+        // .attr('fill', color);
+        .classed(classed, true);
+
+    element.selectAll("foreignObject")
+      .data(history).enter()
+      .append("svg:foreignObject")
+        .attr('x', (d:any) => scale(d.depth) + scale.bandwidth()/2 - this.iconWidth/2)
+        .attr('y', (d:any) => this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding/2)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'central')
+        .attr('font-family', 'Font Awesome 5 Free')
+        .attr('fill', 'black')
+        .attr('font-weight', 900)
+        .attr('overflow', 'visible')
+        .attr('height', this.iconWidth)
+        .attr('width', this.iconWidth)
+        .style('padding-left', '0px')
+        .html((data:any) => {
+          if (data.value)
+            return '<i class="fa fa-1x ' + iconCodes.default[data.value["prov:label"]] + '"></i>';
+          return '<i class="fa fa-1x fa-chart-bar"></i>';
+        });
   }
 
   // private renderIssueHistoryView() {
@@ -572,7 +609,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   // }
 
   private scaleComparison() {
-    let histories = this.nodeHistory.map(hist => hist.id);
+    let histories = this.nodeHistory.map(hist => hist.depth);
     let rate = 1;
     d3.select("#comparisonView").selectAll("g").remove();
     this.sankeyDiag().nodes.forEach((node:any) => {
@@ -587,25 +624,46 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
     })
     // let ratioScale = d3.scaleLinear().domain([0, 1]).range([this.elementPadding, this.scaleHistory(this.nodeHistory[this.nodeHistory.length-1].depth) + this.scaleHistory.bandwidth()]);
     if(this.shiftNodeHistory && this.shiftNodeHistory.length > 0) {
-      this.shiftNodeHistory.reverse();
-      let shiftHistories = this.shiftNodeHistory.map(hist => hist.id);
+      let shiftNodeHistoryReversed = this.shiftNodeHistory.reverse();
+      let shiftHistories = shiftNodeHistoryReversed.map(hist => hist.depth);
       
       // this scale determines how much space is available for both quality views
       rate = histories.length/(histories.length + shiftHistories.length);
 
       // d3.scaleLinear().domain(historyArray).range([35, parseFloat(this.compareView.nativeElement.scrollWidth) - this.nodeWidth - 15]);
-      let compareShiftHistoryScale = d3.scaleBand().domain(shiftHistories)
-      .range([this.elementPadding, this.scaleHistory(this.nodeHistory[this.nodeHistory.length-1].depth) + this.scaleHistory.bandwidth()])
-      .paddingInner(this.innerPadding)
+      let compareWidth = this.compareView.nativeElement.scrollWidth;
+      let detailWidth = 0;
+      if (this.showDetail)
+        detailWidth =  this.detailViewWidth/2;
+
+      let compareA = d3.select("#comparisonView").append("g").classed("compareA", true);
+      let scaleA = d3.scaleBand().domain(histories)
+        .range([this.elementPadding, compareWidth/2 - detailWidth])
+        .paddingInner(this.innerPadding);
+      this.renderQualityView(this.nodeHistory, scaleA, compareA, true);
 
       let compareB = d3.select("#comparisonView").append("g").classed("compareB", true);
-      this.renderQualityView(this.shiftNodeHistory, compareShiftHistoryScale, compareB, true);
+      // let compareShiftHistoryScale = d3.scaleBand().domain(shiftHistories)
+      // .range([this.elementPadding, this.scaleHistory(this.nodeHistory[this.nodeHistory.length-1].depth) + this.scaleHistory.bandwidth()])
+      // .paddingInner(this.innerPadding)
+      let scaleB = d3.scaleBand().domain(shiftHistories)
+        .range([this.elementPadding + compareWidth/2 + detailWidth, compareWidth])
+        .paddingInner(this.innerPadding);
+      this.renderQualityView(this.shiftNodeHistory, scaleB, compareB, true);
+
+      this.issueViewOffset = this.elementPadding + compareWidth/2 - detailWidth;
+      this.renderIssueSelectionView();
+      this.renderHistoryNodes(d3.select("#comparisonView").append("g").classed("iconsA", true).classed("icons", true), this.nodeHistory, scaleA, 'selected');
+      this.renderHistoryNodes(d3.select("#comparisonView").append("g").classed("iconsB", true).classed("icons", true), this.shiftNodeHistory, scaleB, 'shiftSelected');
+    } else {
+      let compareA = d3.select("#comparisonView").append("g").classed("compareA", true);
+      // let compareHistoryScale = d3.scaleBand().domain(histories)
+      //   .range([this.elementPadding, this.scaleHistory(this.nodeHistory[this.nodeHistory.length-1].depth) + this.scaleHistory.bandwidth()])
+      //   .paddingInner(this.innerPadding);
+      this.renderQualityView(this.nodeHistory, this.scaleHistory, compareA, true);
+      this.issueViewOffset = this.elementPadding + this.compareView.nativeElement.scrollWidth - this.detailViewWidth;
+      this.renderIssueSelectionView();
     }
-    let compareA = d3.select("#comparisonView").append("g").classed("compareA", true);
-    // let compareHistoryScale = d3.scaleBand().domain(histories)
-    //   .range([this.elementPadding, this.scaleHistory(this.nodeHistory[this.nodeHistory.length-1].depth) + this.scaleHistory.bandwidth()])
-    //   .paddingInner(this.innerPadding);
-    this.renderQualityView(this.nodeHistory, this.scaleHistory, compareA, true);
   }
 
   private linkIssues(historyNodes: any[]): any[] {

@@ -21,3 +21,17 @@ path.metric-link {
     stroke-width: 0.5;
     fill-opacity: 1;
 }
+
+g.icons rect.selected {
+    fill: #f7fcb9;
+    stroke: gray;
+    fill-opacity: 0.85;
+    stroke-width: 2px;
+}
+
+g.icons rect.shiftSelected {
+    fill: #addd8e;
+    stroke: gray;
+    fill-opacity: 0.65;
+    stroke-width: 2px;
+}

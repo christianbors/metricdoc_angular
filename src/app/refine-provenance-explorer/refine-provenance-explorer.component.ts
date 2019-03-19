@@ -37,9 +37,9 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   // percentage widths
   pageWidth: number = 100;
   provWidth: number = 100;
-  detailWidth: number = 20;
-  detailHeight: number = 40;
-  sankeyHeight: number = 25;
+  detailWidth: number = 50;
+  detailHeight: number = 45;
+  sankeyHeight: number = 35;
   refineHeight: number = 35;
   // absolute widths
   qualityViewWidth: number = 0;
@@ -48,6 +48,8 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   iconWidth:number = 16;
   elementPadding: number = 35;
   innerPadding: number = .8;
+
+  sankeyColorScale: any;
 
   showDetail: boolean = false;
 
@@ -117,7 +119,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
             
               // first lets create the sankey
               this.sankeyDiag = d3Sankey.sankey()
-                .nodeWidth(this.nodeWidth)
+                // .nodeWidth(this.nodeWidth)
                 .nodePadding(nodePadding)
                 .extent([[0, 0], [this.provGraph.nativeElement.scrollWidth, this.provGraph.nativeElement.scrollHeight - (this.iconWidth + nodePadding)]])
                 .nodeAlign(d3Sankey.sankeyLeft);
@@ -175,14 +177,14 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .attr('font-weight', 900)
                   .attr('font-size', '1em')
                   .attr('overflow', 'visible')
-                .html((d:any) => {
-                  if(this.provenanceOverlayModel.provenance.activity["facet:" + d.target.key.replace("history_entry:","")]) {
-                    return '<i class="fa fa-1x fa-chart-bar"></i>';
-                  }
-                });
+                  .html((d:any) => {
+                    if(this.provenanceOverlayModel.provenance.activity["facet:" + d.target.key.replace("history_entry:","")]) {
+                      return '<i class="fa fa-1x fa-chart-bar"></i>';
+                    }
+                  });
 
               this.sankeyLinks.on("mouseover", (data:any) => {
-                let id = data.source.key.replace("history_entry:","");
+                let id = data.target.key.replace("history_entry:","");
                 if(this.provenanceOverlayModel.provenance.activity["facet:" + id]) {
                   let facet = this.provenanceOverlayModel.provenance.activity["facet:" + id];
                   let text = Object.entries(facet)
@@ -216,7 +218,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   ops.push(n.entity["prov:label"]);
               });
               // -1 prevents drawing of color white
-              let sankeyColorScale = d3.scaleSequential(d3.interpolateBlues).domain([-1, ops.length]);
+              this.sankeyColorScale = d3.scaleSequential(d3.interpolateBlues).domain([-1, ops.length]);
               // let scale = d3.scaleOrdinal(d3.schemeCategory10).domain(ops);
 
               let cols:any = {};
@@ -261,7 +263,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .attr("fill", (d:any) => {
                     if (d.entity) {
                       let col = d.entity["prov:label"];
-                      return sankeyColorScale(ops.indexOf(col));
+                      return this.sankeyColorScale(ops.indexOf(col));
                     } return d3.schemePastel2[0];
                   });
               this.sankeyNodes.append("svg:foreignObject")
@@ -645,7 +647,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
         // .attr('stroke-width', '2px');
 
       let path = d3.selectAll("path.activity" + idString)
-      if(!path.empty() && !path.classed("selected"))
+      if(!path.empty())// && !path.classed("selected"))
         path.classed(classString, true);
         // .attr("fill", "#a2b9bc")
         // .attr('stroke', 'gray')
