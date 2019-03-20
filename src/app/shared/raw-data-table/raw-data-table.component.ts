@@ -268,7 +268,7 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
 
   deleteMetric(metric: Metric) {
     console.log('test delete metric' + metric.name);
-    this.openRefineService.deleteMetric(this.projectId, metric, this.contextColumn);
+    this.openRefineService.deleteMetric(this.projectId, metric, this.contextColumn).subscribe(d => console.log(d));
   }
 
   private calculateColWidths() {

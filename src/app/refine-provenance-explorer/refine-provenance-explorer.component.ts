@@ -37,7 +37,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   // percentage widths
   pageWidth: number = 100;
   provWidth: number = 100;
-  detailWidth: number = 50;
+  detailWidth: number = 40;
   detailHeight: number = 45;
   sankeyHeight: number = 35;
   refineHeight: number = 35;
@@ -51,7 +51,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
   sankeyColorScale: any;
 
-  showDetail: boolean = false;
+  showDetail: boolean = true;
 
   @ViewChild('qualityMetric') public metricMenu: ContextMenuComponent;
   @ViewChild('issue') public issueMenu: ContextMenuComponent;
@@ -68,6 +68,8 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   sankeyLinks;
   // d3 transition
   transition;
+
+  metricColorScale: string[] = ['#f7fcf0','#e0f3db','#ccebc5','#a8ddb5','#7bccc4','#4eb3d3','#2b8cbe','#0868ac','#084081'];
 
   constructor(protected route: ActivatedRoute,
     protected router: Router,
@@ -110,18 +112,22 @@ export class RefineProvenanceExplorerComponent implements OnInit {
               this.nodeHistory.push({ id: 0, value: this.provenanceOverlayModel.provenance.entity["history_entry:0"] });
               for (let pastEntry of history.past) {
                 this.nodeHistory.push({ id: pastEntry.id, value: this.provenanceOverlayModel.provenance.entity["history_entry:" + pastEntry.id] });
-                d3.select("svg.provGraph").select("rect#activity" + pastEntry.id)
-                  .classed("selected", true);
-                d3.select("svg.provGraph").select("path#activity" + pastEntry.id)
-                  .classed("selected", true);
               }
-              // this.scaleHistory = d3.scaleBand().domain(this.nodeHistory).range([35, parseFloat(this.provGraph.nativeElement.scrollWidth) - 15]).padding(0.8);
-            
+              this.highlightProvGraph(this.nodeHistory, "selectedPath");
+
+              // this.scaleHistory = d3.scaleBand().domain(this.nodeHistory).range([35, parseFloat(this.provGraph.nativeElement.scrollWidth) - 15]).padding(0.8);        
+
+              let ops = [];
+              Object.entries(this.provenanceOverlayModel.provenance.activity).forEach((act:any) => {
+                if (act[0].includes("change:") && !ops.includes(act[1]["prov:label"]))
+                  ops.push(act[1]["prov:label"]);
+              });
+
               // first lets create the sankey
               this.sankeyDiag = d3Sankey.sankey()
                 // .nodeWidth(this.nodeWidth)
                 .nodePadding(nodePadding)
-                .extent([[0, 0], [this.provGraph.nativeElement.scrollWidth, this.provGraph.nativeElement.scrollHeight - (this.iconWidth + nodePadding)]])
+                .extent([[0, 5], [this.provGraph.nativeElement.scrollWidth - 5, this.provGraph.nativeElement.scrollHeight - (this.iconWidth + nodePadding)]])
                 .nodeAlign(d3Sankey.sankeyLeft);
 
               this.sankeyDiag.nodes(graph.nodes)
@@ -150,7 +156,13 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                     return "activity" + d.target.key.replace("history_entry:","");
                   })
                   // .attr("stroke", d => "grey")
-                  .attr("fill", d => "grey")
+                  .attr("fill", d => {
+                    if (d.wdf) {
+                      let change = this.provenanceOverlayModel.provenance.activity[d.wdf["prov:activity"]];
+                      return d3.schemeSet2[ops.indexOf(change["prov:label"])];//this.sankeyColorScale(ops.indexOf(col));
+                    } 
+                    return d3.schemePastel2[0];
+                  })
                   .attr("fill-opacity", (d:any) => {
                     if(this.scaleHistory(d.source.depth))
                       return 0.35;
@@ -168,7 +180,9 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .attr('text-anchor', 'middle')
                   .attr('dominant-baseline', 'central')
                   .attr('font-family', 'Font Awesome 5 Free')
-                  .attr('fill', 'black')
+                  .attr('stroke', '3px')
+                  .attr('fill', 'none')
+                  .style('white-space', 'nowrap')
                   .attr('opacity', (d:any) => {
                     if (!this.scaleHistory(d.target.depth))
                       return 0;
@@ -178,9 +192,17 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .attr('font-size', '1em')
                   .attr('overflow', 'visible')
                   .html((d:any) => {
-                    if(this.provenanceOverlayModel.provenance.activity["facet:" + d.target.key.replace("history_entry:","")]) {
-                      return '<i class="fa fa-1x fa-chart-bar"></i>';
-                    }
+                    let change = this.provenanceOverlayModel.provenance.activity[d.wdf["prov:activity"]];
+                    let htmlText = "<span>";
+                    let wdfSources = Object.values(this.provenanceOverlayModel.provenance.wasDerivedFrom).filter((wdf: any) => wdf["prov:usedEntity"] === d.wdf["prov:usedEntity"]);
+                    if (wdfSources.length === 1) {
+                      if(this.provenanceOverlayModel.provenance.activity["facet:" + d.target.key.replace("history_entry:","")]) {
+                        htmlText += '<i class="fa fa-1x fa-filter"></i> ';
+                      }
+                      htmlText += '<i class="fa fa-1x ' + iconCodes.default[change["prov:label"]] + '"></i></span>'; //iconCodes.default[d.entity["prov:label"]]
+                      return htmlText;
+                    } else
+                      return '<i class="fa fa-1x fa-ellipsis-v"></i>';
                   });
 
               this.sankeyLinks.on("mouseover", (data:any) => {
@@ -210,13 +232,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .duration(100)
                   .style("opacity", 0);
               });
-                
 
-              let ops = [];
-              Object.values(graph.nodes).forEach((n:any) => {
-                if (n.entity && !ops.includes(n.entity["prov:label"]))
-                  ops.push(n.entity["prov:label"]);
-              });
               // -1 prevents drawing of color white
               this.sankeyColorScale = d3.scaleSequential(d3.interpolateBlues).domain([-1, ops.length]);
               // let scale = d3.scaleOrdinal(d3.schemeCategory10).domain(ops);
@@ -261,43 +277,45 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   })
                   .attr("stroke", "none")
                   .attr("fill", (d:any) => {
-                    if (d.entity) {
-                      let col = d.entity["prov:label"];
-                      return this.sankeyColorScale(ops.indexOf(col));
-                    } return d3.schemePastel2[0];
+                    return "lightgray";
+                    // if (d.entity) {
+                    //   let col = d.entity["prov:label"];
+                    //   return d3.schemeSet2[ops.indexOf(col)];//this.sankeyColorScale(ops.indexOf(col));
+                    // }
                   });
-              this.sankeyNodes.append("svg:foreignObject")
-                  .attr("x", (d:any) => {
-                    if(this.scaleHistory(d.depth))
-                      return this.scaleHistory(d.depth);
-                    else
-                      return this.scaleFuture(d.depth);
-                  })
-                  .attr('y', (d:any) => d.y1)
-                  .attr('text-anchor', 'middle')
-                  .attr('dominant-baseline', 'central')
-                  .attr('font-family', 'Font Awesome 5 Free')
-                  .attr('fill', 'black')
-                  .attr('font-weight', 900)
-                  .attr('overflow', 'visible')
-                  .style('padding-left', (d:any) => {
-                    let w;
-                    if (this.scaleHistory(d.depth))
-                      w = this.scaleHistory.bandwidth();
-                    else
-                      w = this.scaleFuture.bandwidth();
+              // this.sankeyNodes.filter((d:any) => d.entity["prov:label"]).append("svg:foreignObject")
+              //     .attr("x", (d:any) => {
+              //       if(this.scaleHistory(d.depth))
+              //         return this.scaleHistory(d.depth);
+              //       else
+              //         return this.scaleFuture(d.depth);
+              //     })
+              //     .attr('y', (d:any) => d.y1)
+              //     .attr('text-anchor', 'middle')
+              //     .attr('dominant-baseline', 'central')
+              //     .attr('font-family', 'Font Awesome 5 Free')
+              //     .attr('fill', 'black')
+              //     .attr('font-weight', 900)
+              //     .attr('overflow', 'visible')
+              //     .style('white-space', 'nowrap')
+              //     .style('padding-left', (d:any) => {
+              //       let w;
+              //       if (this.scaleHistory(d.depth))
+              //         w = this.scaleHistory.bandwidth();
+              //       else
+              //         w = this.scaleFuture.bandwidth();
                     
-                    if (w > this.iconWidth)
-                      return (w - this.iconWidth)/2 + 'px';
+              //       if (w > this.iconWidth)
+              //         return (w - this.iconWidth)/2 + 'px';
 
-                    return '0px';
-                  })
-                  .attr("height", this.iconWidth)
-                  .html((data:any) => {
-                    if (data.entity)
-                      return '<i class="fa fa-1x ' + iconCodes.default[data.entity["prov:label"]] + '"></i>';
-                    return '<i class="fa fa-1x fa-chart-bar"></i>';
-                  });
+              //       return '0px';
+              //     })
+              //     .attr("height", this.iconWidth)
+              //     .html((data:any) => {
+              //       if (data.entity)
+              //         return '<i class="fa fa-1x ' + iconCodes.default[data.entity["prov:label"]] + '"></i>';
+              //       // return '<i class="fa fa-1x fa-chart-bar"></i>';
+              //     });
 
               this.sankeyNodes.on("mouseover", (data:any) => {
                   div.transition()
@@ -327,14 +345,22 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   if (data.entity) {
                     this.histId = data.key.replace("history_entry:", "");
                     if (d3.event.shiftKey) {
+                      // we need to remove the previously shift selected path
+                      this.clearProvGraphHighlights();
+
                       this.shiftNodeHistory = this.determineNodeHistory(this.histId);
-                      this.highlightProvGraph(this.shiftNodeHistory, "shiftSelected");
+                      this.highlightProvGraph(this.nodeHistory, "selectedPath")
+                      this.highlightProvGraph(this.shiftNodeHistory, "shiftSelectedPath");
+                      d3.select("svg.provGraph g.nodes").select("rect#history_entry" + this.histId)
+                        .classed("shiftSelectedNode", true);
                     } else {
                       this.clearProvGraphHighlights();
                       this.shiftNodeHistory = []
                       this.nodeHistory = this.determineNodeHistory(this.histId);
                       this.setSankeyScale();
                       this.highlightProvGraph(this.nodeHistory, "selected");
+                      d3.select("svg.provGraph g.nodes").select("rect#history_entry" + this.histId)
+                        .classed("selectedNode", true);
                     }
                   }
                 });
@@ -363,12 +389,12 @@ export class RefineProvenanceExplorerComponent implements OnInit {
         links.push({
           source: wdf["prov:usedEntity"],
           target: wdf["prov:generatedEntity"],
-          generated: provenanceOverlayModel.provenance.entity[wdf["prov:generatedEntity"]],
+          // generated: provenanceOverlayModel.provenance.entity[wdf["prov:generatedEntity"]],
           out: null,
           in: null,
           value: 1,
           // depth: Object.values(provenanceOverlayModel.provenance.wasDerivedFrom).indexOf(wdf),
-          activity: wdf
+          wdf: wdf
         });
       }
     }
@@ -548,7 +574,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
       .map(node => node.depth).sort(this.numericSort);
     if (depths[depths.length-1] < maxDepth)
       depths.push(-1);
-    this.scaleHistory = d3.scaleBand().domain(depths).range([this.elementPadding, parseFloat(this.provGraph.nativeElement.scrollWidth)*(this.provWidth/100)]).paddingInner(this.innerPadding);
+    this.scaleHistory = d3.scaleBand().domain(depths).range([this.elementPadding, parseFloat(this.provGraph.nativeElement.scrollWidth)*((this.provWidth-this.detailWidth)/100) - this.elementPadding]).paddingInner(this.innerPadding);
 
     let depthsFuture = [];
     depthsFuture.push(-1);
@@ -557,7 +583,9 @@ export class RefineProvenanceExplorerComponent implements OnInit {
         depthsFuture.push(node.depth);
     });
     depthsFuture.sort(this.numericSort);
-    this.scaleFuture = d3.scaleBand().domain(depthsFuture).range([this.scaleHistory(depths[depths.length-2]) + this.scaleHistory.bandwidth(), parseFloat(this.provGraph.nativeElement.scrollWidth)]).paddingInner(this.innerPadding);
+    
+    let futureWidth = this.scaleHistory(depths[depths.length-2]) + this.scaleHistory.step()*(depthsFuture.length-1);//this.provGraph.nativeElement.scrollWidth - (this.scaleHistory(depths[depths.length-2]) + this.scaleHistory(depths[depths.length-(depthsFuture.length)]) - this.scaleHistory(depths[depths.length-(depthsFuture.length+1)]) - this.elementPadding);
+    this.scaleFuture = d3.scaleBand().domain(depthsFuture).range([this.scaleHistory(depths[depths.length-2]) + this.scaleHistory.bandwidth(), futureWidth]).paddingInner(this.innerPadding);
     // let nodes = d3.select("svg.provGraph").selectAll("g.nodes").selectAll("g.history_nodes");
 
     if(depths[depths.length-1] === -1) {
@@ -630,10 +658,16 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   }
 
   clearProvGraphHighlights() {
-    d3.select("svg.provGraph").selectAll("rect").classed("selected", false).classed("shiftSelected", false);
+    // d3.select("svg.provGraph").selectAll("nodes").classed("selected", false).classed("shiftSelected", false);
       // .classed("selected", false)
       // .classed("shiftSelected", false);
-    d3.select("svg.provGraph").selectAll("path").classed("selected", false).classed("shiftSelected", false);
+    d3.selectAll("svg.provGraph g.nodes g.history_nodes rect")
+      .classed("selected", false)
+      .classed("shiftSelected", false)
+      .classed("selectedNode", false)
+      .classed("shiftSelectedNode", false)
+      .classed("selectedPath", false)
+      .classed("shiftSelectedPath", false);
       // .classed("selected", false)
       // .classed("shiftSelected", false);
   }
@@ -646,14 +680,16 @@ export class RefineProvenanceExplorerComponent implements OnInit {
         // .attr('stroke', 'gray')
         // .attr('stroke-width', '2px');
 
-      let path = d3.selectAll("path.activity" + idString)
-      if(!path.empty())// && !path.classed("selected"))
-        path.classed(classString, true);
+      // let path = d3.selectAll("path.activity" + idString)
+      // if(!path.empty())// && !path.classed("selected"))
+      //   path.classed(classString, true);
         // .attr("fill", "#a2b9bc")
         // .attr('stroke', 'gray')
         // .attr("fill-opacity", 0.85)
         // .attr('stroke-width', '2px');
     }
+    d3.select("svg.provGraph g.nodes").select("rect#history_entry" + this.histId)
+      .classed("selectedNode", true);
   }
 
   private onContextMenu($event: MouseEvent, item: any, metric: any): void {
@@ -691,10 +727,10 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
   toggleShowDetail() {
     this.showDetail = !this.showDetail;
-    if (this.showDetail)
-      this.provWidth = this.pageWidth - this.detailWidth;
-    else 
-      this.provWidth = this.pageWidth;
+    // if (this.showDetail)
+    //   this.provWidth = this.pageWidth - this.detailWidth;
+    // else 
+    //   this.provWidth = this.pageWidth;
     this.nodeHistory = this.determineNodeHistory(this.histId);
     this.setSankeyScale();
   }

@@ -156,7 +156,7 @@ export class OpenRefineService {
     }
     return this.http.post(this.openRefineServerUrl + 'metric-doc/updateMetric', params)
       .map(this.extractData)
-      .catch(this.handleError).subscribe();
+      .catch(this.handleError);
   }
 
   deleteMetric (projectId: any, metric: any, column: any) {
@@ -169,7 +169,7 @@ export class OpenRefineService {
     }
     return this.http.post(this.openRefineServerUrl + 'metric-doc/deleteMetric', params)
       .map(this.extractData)
-      .catch(this.handleError).subscribe();
+      .catch(this.handleError);
   }
 
   evaluateMetrics (projectId: string) :Observable<MetricsOverlayModel> {
@@ -193,7 +193,7 @@ export class OpenRefineService {
     params.set('selection', JSON.stringify(selection));
     return this.http.post(this.openRefineServerUrl + 'metric-doc/evaluateSelectedMetric', params)
       .map(this.extractData)
-      .catch(this.handleError).subscribe();
+      .catch(this.handleError);
   }
 
   previewExpression (projectId: any, expression: string, cellIdx: any) {
@@ -205,7 +205,7 @@ export class OpenRefineService {
     params.set('cellIndex', cellIdx);
     return this.http.post(this.openRefineServerUrl + 'core/preview-expression', params)
       .map(this.extractData)
-      .catch(this.handleError).subscribe();
+      .catch(this.handleError);
   }
 
   getMetricDocFunctionsOverview () {

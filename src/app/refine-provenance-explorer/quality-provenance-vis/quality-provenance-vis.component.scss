@@ -23,14 +23,21 @@ path.metric-link {
 }
 
 g.icons rect.selected {
-    fill: #f7fcb9;
+    fill: #d8b365;
     stroke: gray;
     fill-opacity: 0.85;
     stroke-width: 2px;
 }
 
 g.icons rect.shiftSelected {
-    fill: #addd8e;
+    fill: #5ab4ac;
+    stroke: gray;
+    fill-opacity: 0.65;
+    stroke-width: 2px;
+}
+
+g.icons rect.jointSelected {
+    fill: #f5f5f5;
     stroke: gray;
     fill-opacity: 0.65;
     stroke-width: 2px;
