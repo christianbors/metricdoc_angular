@@ -392,6 +392,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
 
   private renderIssueViewForHistId(histId: any, selectElement: any, translate: number, rows: number, elementWidth: number):any {
     let issues = [];
+    let issuesB = [];
     for (let ent in this.provenanceOverlayModel.provenance.entity) {
       // let histId = entity[0].replace("history_entry:", "");
       let errorIndices = [];
@@ -404,7 +405,49 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
         }
         issues.push({col: ent, issues: errorIndices});
       }
+      let errorIndicesB = [];
+      if (this.shiftHistId && this.provenanceOverlayModel.provenance.entity[ent]["error:"+this.shiftHistId]) {
+        for (let errorArray of this.provenanceOverlayModel.provenance.entity[ent]["error:"+this.shiftHistId]) {
+          errorIndicesB.push({metric: errorArray.type, indices: JSON.parse(errorArray.$)});
+          if (!this.uniqueMetrics.includes(errorArray.type.replace("error:",""))) {
+            this.uniqueMetrics.push(errorArray.type.replace("error:",""));
+          }
+        }
+        issuesB.push({col: ent, issues: errorIndicesB});
+      }
     };
+
+    if (issuesB.length > 0) {
+      let issuesLarger,
+          issuesSmaller;
+      if (issues.length > issuesB.length) {
+        issuesLarger = [].concat(issues);
+        issuesSmaller = [].concat(issuesB);
+      }
+      else {
+        issuesLarger = [].concat(issuesB);
+        issuesSmaller = [].concat(issues);
+      }
+
+      for (let arrIdx = 0; arrIdx < issuesLarger.length; arrIdx++) {
+        let issueSmArr = issuesSmaller.find((d:any) => issuesLarger[arrIdx].col === d.col);
+        if (issueSmArr) {
+          for (let m = 0; m < issuesLarger[arrIdx].issues.length; ++m) {
+            let smMetric = issueSmArr.issues.find((mVal:any) => issuesLarger[arrIdx].issues[m].metric === mVal.metric);
+            if (smMetric) {
+              for (let i = 0; i < issuesLarger[arrIdx].issues[m].indices.length;) {
+                if (smMetric.indices.includes(issuesLarger[arrIdx].issues[m].indices[i]))
+                  issuesLarger[arrIdx].issues[m].indices.splice(i, 1);
+                else
+                  ++i;
+              }
+            }
+          }
+        }
+      }
+      issues = issuesLarger;
+    }
+
     this.uniqueMetrics.sort();
     this.initializeColorScale();
 
@@ -425,20 +468,11 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   
     let scaleXColumn = d3.scaleBand()
       .domain(issues.map(issuesEntry => issuesEntry.col))
-      .range([translate, translate + elementWidth]); //.padding(0.05)
-    // let maxRows:number[] = Object.entries(this.provenanceOverlayModel.provenance.entity["project_info:dataset"]).map((el: any) => {
-    //   // let histIds = this.nodeHistory.map(d => d.id);
-    //   if (this.nodeHistory && this.nodeHistory.map(d => parseInt(d.id)).includes(parseInt(el[0].replace("other:", ""))) && el[1].type === "project_info:rowSize")
-    //     return parseInt(el[1].$);
-    // }).filter(el => el);
-    // this.maxRowNumber = Math.max.apply(Math, maxRows);
+      .range([translate, translate + elementWidth]);
     
     let scaleYRows = d3.scaleLinear()
       .domain([0, rows])
       .range([15, this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding]);
-
-    // let issueView = 
-    //   .data(issues);
 
     // // EXIT old elements not present in new data.
     // issueView.exit()
@@ -596,14 +630,11 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       .call(yAxis);
   }
 
+  private renderIssueViewForDiff() {
+
+  }
+
   private renderHistoryLinks(element: any, history: any[], scale: any, classed: string, inverted: boolean) {
-    // element.append("rect")
-    //     .attr('x', (d:any) => scale(history[0].depth))
-    //     .attr('y', (d:any) => this.compareView.nativeElement.scrollHeight - 20 - (this.elementPadding - this.iconWidth))
-    //     .attr('height', this.elementPadding)
-    //     .attr('width', scale(history[history.length-1].depth) - scale(history[0].depth) + scale.bandwidth())
-    //     // .attr('fill', color);
-    //     .classed(classed, true);
 
     element.selectAll('rect')
       .data(history).enter()
@@ -748,6 +779,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
         d3.select("#comparisonView g.selectionLinks").remove();
         d3.select("#comparisonView").selectAll("path.separator").remove();
       }
+
     } else {
       d3.select("#comparisonView").selectAll("path").remove();
       let compareA = d3.select("#comparisonView").append("g").classed("compareA", true);

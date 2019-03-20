@@ -261,10 +261,10 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   return text;
                 });
 
-              this.sankeyLinks.selectAll("path").on("mouseover", (data:any) => {
+              this.sankeyLinks.selectAll("path").on("mouseover", (data:any, i, el:any[]) => {
                 let id = data.target.key.replace("history_entry:","");
+                d3.select(el[i].parentNode).raise();
 
-                d3.select(this).raise();
                 let change = this.provenanceOverlayModel.provenance.entity[data.wdf["prov:generatedEntity"]];
                 let text = "<span><b>Operation:</b> "+ change["prov:value"].$ +"</span>";
                 divChange.html(text)
@@ -295,7 +295,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   return text;
                 }
               })
-              .on("mouseout", (d:any) => {
+              .on("mouseout", (d:any, i, el:any[]) => {
                 div.transition()
                   // .duration(100)
                   .style("opacity", 0);
@@ -381,6 +381,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                       d3.select("svg.provGraph g.nodes").select("rect#history_entry" + histIdClicked)
                         .classed("shiftSelectedNode", true);
                     } else {
+                      this.shiftHistId = null;
                       this.histId = histIdClicked;
                       this.clearProvGraphHighlights();
                       this.shiftNodeHistory = []
