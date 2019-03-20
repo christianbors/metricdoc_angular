@@ -344,6 +344,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                 });
 
               this.highlightProvGraph(this.nodeHistory, "selected");
+              this.loadFinished = true;
             });
           }
         },
@@ -576,6 +577,10 @@ export class RefineProvenanceExplorerComponent implements OnInit {
     } else {
       this.qualityViewWidth = this.scaleHistory(depths[depths.length-1]) + this.scaleHistory.bandwidth();
       this.detailViewWidth = parseFloat(this.provGraph.nativeElement.scrollWidth)*(this.detailWidth/100) - this.scaleHistory.bandwidth();
+    }
+    // we don't want the detail view to be to wide
+    if (this.detailViewWidth > this.provGraph.nativeElement.scrollWidth * 0.4) {
+      this.detailViewWidth = this.provGraph.nativeElement.scrollWidth * 0.4;
     }
 
     if (this.sankeyNodes) {

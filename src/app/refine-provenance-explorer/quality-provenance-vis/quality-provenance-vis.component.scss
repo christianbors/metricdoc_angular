@@ -21,21 +21,3 @@ path.metric-link {
     stroke-width: 0.5;
     fill-opacity: 1;
 }
-
-g.icons rect.selected {
-    fill: #f1a340;
-    stroke: gray;
-    stroke-width: 2px;
-}
-
-g.icons rect.shiftSelected {
-    fill: #998ec3;
-    stroke: gray;
-    stroke-width: 2px;
-}
-
-g.icons rect.jointSelected {
-    fill: #f7f7f7;
-    stroke: gray;
-    stroke-width: 2px;
-}

@@ -17,7 +17,8 @@
   [sankeyDiag]="sankeyDiag"
   [qualityViewWidth]="qualityViewWidth"
   [showDetail]="showDetail"
-  [detailViewWidth]="detailViewWidth"></app-quality-provenance-vis>
+  [detailViewWidth]="detailViewWidth"
+  [loadFinished]="loadFinished"></app-quality-provenance-vis>
 <svg #provGraph class="provGraph" [style.width.%]="pageWidth" [style.height.%]="sankeyHeight"></svg>
 <context-menu #qualityMetric>
   <!-- <ng-template contextMenuItem divider="true"></ng-template> -->

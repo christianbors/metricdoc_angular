@@ -1,3 +1,7 @@
+$selected-color: #fc8d59;
+$shift-selected-color: #91bfdb;
+$both-selected-color: #ffffbf;
+
 div.d3tooltip {
     position: absolute;
     text-align: center;
@@ -13,25 +17,25 @@ div.d3tooltip {
 
 rect.selected {
     stroke: gray;
-    fill: #f7f7f7;
+    fill: $both-selected-color;
     stroke-width: 2px;
 }
 
 rect.selectedPath {
     stroke: gray;
-    fill: #f1a340;
+    fill: $selected-color;
     stroke-width: 2px;
 }
 
 rect.shiftSelectedPath {
     stroke: gray;
-    fill: #998ec3;
+    fill: $shift-selected-color;
     stroke-width: 2px;
 }
 
 rect.selectedPath.shiftSelectedPath {
     stroke: gray;
-    fill: #f7f7f7;
+    fill: $both-selected-color;
     stroke-width: 2px;
 }
 
@@ -45,6 +49,20 @@ rect.shiftSelectedNode {
     stroke-width: 4px;
 }
 
-/*g.history_nodes foreignObject {
-    padding-left: 6px;
-}*/
+g.icons rect.selected {
+    fill: $selected-color;
+    stroke: gray;
+    stroke-width: 2px;
+}
+
+g.icons rect.shiftSelected {
+    fill: $shift-selected-color;
+    stroke: gray;
+    stroke-width: 2px;
+}
+
+g.icons rect.jointSelected {
+    fill: $both-selected-color;
+    stroke: gray;
+    stroke-width: 2px;
+}
