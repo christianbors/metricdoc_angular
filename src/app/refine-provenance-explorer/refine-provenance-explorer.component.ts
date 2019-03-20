@@ -25,6 +25,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   projectId: string;
   refineProjectUrl;
   histId: any;
+  shiftHistId: any;
   nodeHistory: any[];
   shiftNodeHistory: any[];
   projectMetadata: ProjectMetadata;
@@ -155,24 +156,37 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .attr("class", (d:any) => { 
                     return "activity" + d.target.key.replace("history_entry:","");
                   })
+                  .attr("fill", "lightgray")
                   // .attr("stroke", d => "grey")
-                  .attr("fill", d => {
-                    if (d.wdf) {
-                      let change = this.provenanceOverlayModel.provenance.activity[d.wdf["prov:activity"]];
-                      return d3.schemeSet2[ops.indexOf(change["prov:label"])];//this.sankeyColorScale(ops.indexOf(col));
-                    } 
-                    return d3.schemePastel2[0];
-                  })
+                  // .attr("fill", d => {
+                  //   if (d.wdf) {
+                  //     let change = this.provenanceOverlayModel.provenance.activity[d.wdf["prov:activity"]];
+                  //     return d3.schemeSet2[ops.indexOf(change["prov:label"])];//this.sankeyColorScale(ops.indexOf(col));
+                  //   } 
+                  //   return d3.schemePastel2[0];
+                  // })
                   .attr("fill-opacity", (d:any) => {
-                    if(this.scaleHistory(d.source.depth))
+                    // if(this.scaleHistory(d.source.depth))
                       return 0.35;
-                    return 0.2;
+                    // return 0.2;
                   })
+                  .attr("stroke", (d:any) => {
+                    if(this.nodeHistory.map(node => node.id).includes(parseInt(d.target.key.replace("history_entry:",""))) ||
+                      (this.shiftNodeHistory && this.shiftNodeHistory.map(node => node.id).includes(parseInt(d.target.key.replace("history_entry:","")))))
+                      return "gray";
+                    else
+                      return null;
+                  })
+                  .attr("stroke-width", 2);
                   
               this.sankeyLinks.append("svg:foreignObject")
                   .attr('x', (d:any) => {
                     if(this.scaleHistory(d.source.depth) && this.scaleHistory(d.target.depth))
-                      return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleHistory(d.target.depth) - this.nodeWidth/2)(.5);
+                      return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleHistory(d.target.depth))(.5) - this.nodeWidth/2;
+                    else if (this.scaleHistory(d.source.depth) && this.scaleFuture(d.target.depth))
+                      return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleFuture(d.target.depth))(.5) - this.nodeWidth/2;
+                    else if (this.scaleFuture(d.source.depth))
+                      return d3.interpolate(this.scaleFuture(d.source.depth)+this.scaleFuture.bandwidth(), this.scaleFuture(d.target.depth))(.5) - this.nodeWidth/2;
                   })
                   .attr('y', (d:any) => {
                     return d.source.y1;
@@ -180,14 +194,14 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .attr('text-anchor', 'middle')
                   .attr('dominant-baseline', 'central')
                   .attr('font-family', 'Font Awesome 5 Free')
-                  .attr('stroke', '3px')
+                  .attr('stroke', '2px')
                   .attr('fill', 'none')
                   .style('white-space', 'nowrap')
-                  .attr('opacity', (d:any) => {
-                    if (!this.scaleHistory(d.target.depth))
-                      return 0;
-                    return 1;
-                  })
+                  // .attr('opacity', (d:any) => {
+                  //   if (!this.scaleHistory(d.target.depth))
+                  //     return 0;
+                  //   return 1;
+                  // })
                   .attr('font-weight', 900)
                   .attr('font-size', '1em')
                   .attr('overflow', 'visible')
@@ -250,8 +264,6 @@ export class RefineProvenanceExplorerComponent implements OnInit {
               .data(this.sankeyDiag().nodes)
               .enter().append("g")
                 .attr("class", "history_nodes");
-                // .attr("height", (d:any) => d.y1 - d.y0 + this.nodeWidth)
-                // .attr("width", (d:any) => d.x1 - d.x0);
 
               this.sankeyNodes.append("rect")
                   .attr("id", (data:any) => {
@@ -278,44 +290,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .attr("stroke", "none")
                   .attr("fill", (d:any) => {
                     return "lightgray";
-                    // if (d.entity) {
-                    //   let col = d.entity["prov:label"];
-                    //   return d3.schemeSet2[ops.indexOf(col)];//this.sankeyColorScale(ops.indexOf(col));
-                    // }
                   });
-              // this.sankeyNodes.filter((d:any) => d.entity["prov:label"]).append("svg:foreignObject")
-              //     .attr("x", (d:any) => {
-              //       if(this.scaleHistory(d.depth))
-              //         return this.scaleHistory(d.depth);
-              //       else
-              //         return this.scaleFuture(d.depth);
-              //     })
-              //     .attr('y', (d:any) => d.y1)
-              //     .attr('text-anchor', 'middle')
-              //     .attr('dominant-baseline', 'central')
-              //     .attr('font-family', 'Font Awesome 5 Free')
-              //     .attr('fill', 'black')
-              //     .attr('font-weight', 900)
-              //     .attr('overflow', 'visible')
-              //     .style('white-space', 'nowrap')
-              //     .style('padding-left', (d:any) => {
-              //       let w;
-              //       if (this.scaleHistory(d.depth))
-              //         w = this.scaleHistory.bandwidth();
-              //       else
-              //         w = this.scaleFuture.bandwidth();
-                    
-              //       if (w > this.iconWidth)
-              //         return (w - this.iconWidth)/2 + 'px';
-
-              //       return '0px';
-              //     })
-              //     .attr("height", this.iconWidth)
-              //     .html((data:any) => {
-              //       if (data.entity)
-              //         return '<i class="fa fa-1x ' + iconCodes.default[data.entity["prov:label"]] + '"></i>';
-              //       // return '<i class="fa fa-1x fa-chart-bar"></i>';
-              //     });
 
               this.sankeyNodes.on("mouseover", (data:any) => {
                   div.transition()
@@ -343,23 +318,26 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                 })
                 .on("click", (data:any, index:number, entries:any[]) => {
                   if (data.entity) {
-                    this.histId = data.key.replace("history_entry:", "");
+                    let histIdClicked = data.key.replace("history_entry:", "");
                     if (d3.event.shiftKey) {
+                      this.shiftHistId = histIdClicked;
                       // we need to remove the previously shift selected path
                       this.clearProvGraphHighlights();
 
-                      this.shiftNodeHistory = this.determineNodeHistory(this.histId);
+                      this.shiftNodeHistory = this.determineNodeHistory(histIdClicked);
+                      this.setSankeyScale();
                       this.highlightProvGraph(this.nodeHistory, "selectedPath")
                       this.highlightProvGraph(this.shiftNodeHistory, "shiftSelectedPath");
-                      d3.select("svg.provGraph g.nodes").select("rect#history_entry" + this.histId)
+                      d3.select("svg.provGraph g.nodes").select("rect#history_entry" + histIdClicked)
                         .classed("shiftSelectedNode", true);
                     } else {
+                      this.histId = histIdClicked;
                       this.clearProvGraphHighlights();
                       this.shiftNodeHistory = []
-                      this.nodeHistory = this.determineNodeHistory(this.histId);
+                      this.nodeHistory = this.determineNodeHistory(histIdClicked);
                       this.setSankeyScale();
                       this.highlightProvGraph(this.nodeHistory, "selected");
-                      d3.select("svg.provGraph g.nodes").select("rect#history_entry" + this.histId)
+                      d3.select("svg.provGraph g.nodes").select("rect#history_entry" + histIdClicked)
                         .classed("selectedNode", true);
                     }
                   }
@@ -530,7 +508,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   determineNodeHistory(historyId: any):any[] {
     // let histories = Object.entries(this.provenanceOverlayModel.provenance.entity).filter((entity: any) => { if (entity[0].includes("history_entry:")) return entity; });
     let nodeHistory = [];
-    let parent = "history_entry:" + this.histId;
+    let parent = "history_entry:" + historyId;
     while (parent) {
       nodeHistory.splice(0, 0, { id: parseInt(parent.replace("history_entry:", "")), value: this.provenanceOverlayModel.provenance.entity[parent] });
       let wdfParent = Object.values(this.provenanceOverlayModel.provenance.wasDerivedFrom).find((wdf: any) => {
@@ -584,7 +562,11 @@ export class RefineProvenanceExplorerComponent implements OnInit {
     });
     depthsFuture.sort(this.numericSort);
     
-    let futureWidth = this.scaleHistory(depths[depths.length-2]) + this.scaleHistory.step()*(depthsFuture.length-1);//this.provGraph.nativeElement.scrollWidth - (this.scaleHistory(depths[depths.length-2]) + this.scaleHistory(depths[depths.length-(depthsFuture.length)]) - this.scaleHistory(depths[depths.length-(depthsFuture.length+1)]) - this.elementPadding);
+    let futureWidth
+    if (depthsFuture.length < depths.length)
+      futureWidth = this.scaleHistory(depths[depths.length-2]) + this.scaleHistory.step()*(depthsFuture.length-1);//this.provGraph.nativeElement.scrollWidth - (this.scaleHistory(depths[depths.length-2]) + this.scaleHistory(depths[depths.length-(depthsFuture.length)]) - this.scaleHistory(depths[depths.length-(depthsFuture.length+1)]) - this.elementPadding);
+    else
+      futureWidth = this.provGraph.nativeElement.scrollWidth;
     this.scaleFuture = d3.scaleBand().domain(depthsFuture).range([this.scaleHistory(depths[depths.length-2]) + this.scaleHistory.bandwidth(), futureWidth]).paddingInner(this.innerPadding);
     // let nodes = d3.select("svg.provGraph").selectAll("g.nodes").selectAll("g.history_nodes");
 
@@ -641,18 +623,29 @@ export class RefineProvenanceExplorerComponent implements OnInit {
         // .attr("class", (d:any) => { 
         //   return "activity" + d.activity.replace("change:","");
         // })
+        .attr("stroke", (d:any) => {
+          if(this.nodeHistory.map(node => node.id).includes(parseInt(d.target.key.replace("history_entry:",""))) ||
+            (this.shiftNodeHistory && this.shiftNodeHistory.map(node => node.id).includes(parseInt(d.target.key.replace("history_entry:","")))))
+            return "gray";
+          else
+            return null;
+        })
         .transition(this.transition);
 
       this.sankeyLinks.selectAll("foreignObject")
         .attr('x', (d:any) => {
           if(this.scaleHistory(d.source.depth) && this.scaleHistory(d.target.depth))
-            return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleHistory(d.target.depth) - this.nodeWidth/2)(.5);
+            return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleHistory(d.target.depth))(.5) - this.nodeWidth/2;
+          else if (this.scaleHistory(d.source.depth) && this.scaleFuture(d.target.depth))
+            return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleFuture(d.target.depth))(.5) - this.nodeWidth/2;
+          else if (this.scaleFuture(d.source.depth))
+            return d3.interpolate(this.scaleFuture(d.source.depth)+this.scaleFuture.bandwidth(), this.scaleFuture(d.target.depth))(.5) - this.nodeWidth/2;
         })
-        .attr('opacity', (d:any) => {
-          if (!this.scaleHistory(d.target.depth))
-            return 0;
-          return 1;
-        })
+        // .attr('opacity', (d:any) => {
+        //   if (!this.scaleHistory(d.target.depth))
+        //     return 0;
+        //   return 1;
+        // })
         .transition(this.transition);
     }
   }
@@ -731,7 +724,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
     //   this.provWidth = this.pageWidth - this.detailWidth;
     // else 
     //   this.provWidth = this.pageWidth;
-    this.nodeHistory = this.determineNodeHistory(this.histId);
+    // this.nodeHistory = this.determineNodeHistory(this.histId);
     this.setSankeyScale();
   }
 
