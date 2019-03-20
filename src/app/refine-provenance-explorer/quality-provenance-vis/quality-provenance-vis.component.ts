@@ -48,6 +48,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
 
   errorMessage;
   uniqueMetrics: string[] = [];
+  metricsColorScale;
 
   columnModel: any;
   provenanceOverlayModel: any;
@@ -211,6 +212,8 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
           this.uniqueMetrics.push(val.metric.replace("quality:", "")); 
       })
       this.uniqueMetrics.sort();
+      // this.metricsColorScale = d3.interpolatePuOr(this.uniqueMetrics.length);
+      this.metricsColorScale = d3.scaleSequential(d3.interpolateViridis).domain([-1, this.uniqueMetrics.length+1]);
 
       this.scaleComparison();
     }
@@ -222,8 +225,8 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       .append("g")
         .attr("class", (stack:any) => stack.key.column.replace("column:","") + " " + stack.key.metric.replace("quality:",""))
         // .attr("transform", d3Transform.transform().translate(20,15))
-        .attr("fill", (d:any) =>  d3.schemePastel2[this.uniqueMetrics.indexOf(d.key.metric.replace("quality:", ""))])
-        .attr("stroke", (d:any) =>  d3.schemeDark2[this.uniqueMetrics.indexOf(d.key.metric.replace("quality:", ""))])
+        .attr("fill", (d:any) =>  this.determineColor(d.key.metric.replace("quality:", "")))//d3.schemePastel2[this.uniqueMetrics.indexOf(d.key.metric.replace("quality:", ""))])
+        .attr("stroke", (d:any) =>  this.determineStrokeColor(d.key.metric.replace("quality:", "")))//d3.schemeDark2[this.uniqueMetrics.indexOf(d.key.metric.replace("quality:", ""))])
         .attr("stroke-width", .5)
         .attr("stroke-opacity", .6)
       .selectAll("rect")
@@ -329,8 +332,8 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       .data(stack)
       .enter().append("g")
         .attr("class", (stack:any) => stack.key.column.replace("column:", "") + " " + stack.key.metric.replace("quality:", ""))
-        .attr("fill", (stack:any) =>  d3.schemePastel2[this.uniqueMetrics.indexOf(stack.key.metric.replace("quality:", ""))])
-        .attr("stroke", (stack:any) =>  d3.schemeDark2[this.uniqueMetrics.indexOf(stack.key.metric.replace("quality:", ""))])
+        .attr("fill", (stack:any) =>  this.determineColor(stack.key.metric.replace("quality:", "")))
+        .attr("stroke", (stack:any) =>  this.determineStrokeColor(stack.key.metric.replace("quality:", "")))
         .attr("stroke-opacity", 0)
         .attr("stroke-width", 0)
         .attr("fill-opacity", 0.4)
@@ -478,8 +481,8 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
     // ENTER new elements present in new data.
     gIssues.enter().append("g")
       .attr("class", (d:any) => d.metric.replace("error:", "") )
-      .attr("fill", (d:any) =>  d3.schemeDark2[this.uniqueMetrics.indexOf(d.metric.replace("error:", ""))])
-      .attr("stroke", (d:any) =>  d3.schemeDark2[this.uniqueMetrics.indexOf(d.metric.replace("error:", ""))]);
+      .attr("fill", (d:any) =>  this.determineColor(d.metric.replace("error:", "")))
+      .attr("stroke", (d:any) =>  this.determineStrokeColor(d.metric.replace("error:", "")));
 
     let rectIssues = selectElement.selectAll("g.column").selectAll("g").selectAll("rect")
       .data((d:any) => d.indices);
@@ -598,12 +601,12 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
         .attr('x', (d:any) => {
           if (d.depth > 0) {
             if (inverted)
-              return d3.interpolate(scale(d.depth), scale(d.depth) + scale.step())(.5) + this.iconWidth/4;
-            // return scale(d.depth) - scale.bandwidth() - this.iconWidth/4;
-            return d3.interpolate(scale(d.depth), scale(d.depth) - scale.step())(.5) - this.iconWidth/4;
+              return d3.interpolate(scale(d.depth), scale(d.depth) + scale.step())(.5);
+            
+            return d3.interpolate(scale(d.depth), scale(d.depth) - scale.step())(.5);
           } 
           if (inverted)
-            return scale(0) + this.iconWidth + scale.bandwidth();
+            return scale(0) + this.iconWidth/4 + scale.bandwidth();
         })
         .attr('y', (d:any) => this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding/2)
         .attr('text-anchor', 'middle')
@@ -748,5 +751,13 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
            + "L" + x0 + "," + y0;
     // }
     // return null;
+  }
+
+  private determineColor(metric: any): any {
+    return d3.color(this.metricsColorScale(this.uniqueMetrics.indexOf(metric))); //d.key.metric.replace("quality:", "")
+  }
+
+  private determineStrokeColor(metric: any): any {
+    return d3.color(this.metricsColorScale(this.uniqueMetrics.indexOf(metric))).brighter(.75); //d.key.metric.replace("quality:", "")
   }
 }

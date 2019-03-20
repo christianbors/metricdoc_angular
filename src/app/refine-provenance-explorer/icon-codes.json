@@ -1,6 +1,6 @@
 {
     "Create Project": "fa-file-import",
-    "TextTransformChange": "fa-code",
+    "TextTransformChange": "fa-edit",
     "MassEditChange": "fa-edit",
     "MassCellChange": "fa-edit",
     "MultiValuedCellJoinChange": "fa-compress",
@@ -33,7 +33,7 @@
     "ExtendDataChange": "fa-external-link-alt",
     "MetricsExtensionChange": "fa-external-link-alt",
     "CellChange": "fa-edit",
-    "TextTransformOperation": "fa-code",
+    "TextTransformOperation": "fa-edit",
     "MassEditOperation": "fa-edit",
     "MultiValuedCellJoinOperation": "fa-compress",
     "MultiValuedCellSplitOperation": "fa-expand",

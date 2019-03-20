@@ -13,25 +13,25 @@ div.d3tooltip {
 
 rect.selected {
     stroke: gray;
-    /*fill: #addd8e;*/
+    fill: #f7f7f7;
     stroke-width: 2px;
 }
 
 rect.selectedPath {
     stroke: gray;
-    fill: #d8b365;
+    fill: #f1a340;
     stroke-width: 2px;
 }
 
 rect.shiftSelectedPath {
     stroke: gray;
-    fill: #5ab4ac;
+    fill: #998ec3;
     stroke-width: 2px;
 }
 
 rect.selectedPath.shiftSelectedPath {
     stroke: gray;
-    fill: #f5f5f5;
+    fill: #f7f7f7;
     stroke-width: 2px;
 }
 

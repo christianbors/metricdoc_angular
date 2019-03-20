@@ -148,7 +148,6 @@ export class RefineProvenanceExplorerComponent implements OnInit {
               // Define the div for the tooltip
               var div = d3.select("body").append("div")
                 .attr("class", "d3tooltip")
-                // .attr("[ngStyle]", "tooltip")
                 .style("opacity", 0);
 
               this.sankeyLinks.append("path")
@@ -208,8 +207,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .html((d:any) => {
                     let change = this.provenanceOverlayModel.provenance.activity[d.wdf["prov:activity"]];
                     let htmlText = "<span>";
-                    let wdfSources = Object.values(this.provenanceOverlayModel.provenance.wasDerivedFrom).filter((wdf: any) => wdf["prov:usedEntity"] === d.wdf["prov:usedEntity"]);
-                    if (wdfSources.length === 1) {
+                    if (d.source.sourceLinks && d.source.sourceLinks.length === 1) {
                       if(this.provenanceOverlayModel.provenance.activity["facet:" + d.target.key.replace("history_entry:","")]) {
                         htmlText += '<i class="fa fa-1x fa-filter"></i> ';
                       }
@@ -221,6 +219,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
               this.sankeyLinks.on("mouseover", (data:any) => {
                 let id = data.target.key.replace("history_entry:","");
+
                 if(this.provenanceOverlayModel.provenance.activity["facet:" + id]) {
                   let facet = this.provenanceOverlayModel.provenance.activity["facet:" + id];
                   let text = Object.entries(facet)
@@ -233,6 +232,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                 div.transition()
                   .duration(100)
                   .style("opacity", .9);
+                
                 if(facet["other:" + id]) {
                   div.html("<span><b>Filter " + facet["other:" + id].$ + " rows</b></span><br><span>" + text.join("<br>") + "</span>")
                     .style("left", (d3.event.pageX) + "px")
