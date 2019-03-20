@@ -149,6 +149,9 @@ export class RefineProvenanceExplorerComponent implements OnInit {
               var div = d3.select("body").append("div")
                 .attr("class", "d3tooltip")
                 .style("opacity", 0);
+              var divChange = d3.select("body").append("div")
+                .classed("d3tooltip", true)
+                .style("opacity", 0);
 
               this.sankeyLinks.append("path")
                   .attr("d", (d:any) => this.linkSkewed(d))
@@ -179,46 +182,97 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .attr("stroke-width", 2);
                   
               this.sankeyLinks.append("svg:foreignObject")
-                  .attr('x', (d:any) => {
+                .classed("change", true)
+                .html((d:any) => {
+                  let change = this.provenanceOverlayModel.provenance.activity[d.wdf["prov:activity"]];
+                  let htmlText = "<span>";
+                  // if (d.source.sourceLinks && d.source.sourceLinks.length === 1) {
+                    htmlText += '<i class="fa fa-1x ' + iconCodes.default[change["prov:label"]] + '"></i></span>'; //iconCodes.default[d.entity["prov:label"]]
+                    return htmlText;
+                  // } else {
+                  //   // remove all other 
+                  //   return '<i class="fa fa-1x fa-ellipsis-v"></i>';
+                  // }
+                })
+                .attr('x', (d:any) => {
+                  if(this.scaleHistory(d.source.depth) && this.scaleHistory(d.target.depth))
+                    return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleHistory(d.target.depth))(.85) - this.nodeWidth/4;
+                  else if (this.scaleHistory(d.source.depth) && this.scaleFuture(d.target.depth))
+                    return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleFuture(d.target.depth))(.85) - this.nodeWidth/4;
+                  else if (this.scaleFuture(d.source.depth))
+                    return d3.interpolate(this.scaleFuture(d.source.depth)+this.scaleFuture.bandwidth(), this.scaleFuture(d.target.depth))(.85) - this.nodeWidth/4;
+                })
+                .attr('y', (d:any) => {
+                  // if (d3.interpolate(d.target.y1, d.target.y0)(.5) > d.target.y1)
+                    return d3.interpolate(d.target.y1, d.target.y0)(.5) - this.nodeWidth/4;
+                  // return 0;
+                })
+                .on("mouseover", (data:any) => {
+                  let change = this.provenanceOverlayModel.provenance.entity[data.wdf["prov:generatedEntity"]];
+                  let text = "<span><b>Operation:</b> "+ change["prov:value"].$ +"</span>";
+                  divChange.html(text)
+                    .style("left", (d3.event.pageX - div.node().scrollWidth) + "px")
+                    .style("top", (d3.event.pageY - 28) + "px");
+                  divChange.transition()
+                    .duration(100)
+                    .style("opacity", .9);
+                  div.style("opacity", 0);
+                })
+                .on("mouseout", (data:any) => {
+                  divChange.transition()
+                    .duration(100)
+                    .style("opacity", 0);
+                });
+              // these are the facets
+              this.sankeyLinks.filter((link: any) => this.provenanceOverlayModel.provenance.activity["facet:" + link.target.key.replace("history_entry:","")]).append("svg:foreignObject")
+                .classed("facet", true)
+                .attr('x', (d:any) => {
                     if(this.scaleHistory(d.source.depth) && this.scaleHistory(d.target.depth))
-                      return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleHistory(d.target.depth))(.5) - this.nodeWidth/2;
+                      return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleHistory(d.target.depth))(.5) - this.nodeWidth/4;
                     else if (this.scaleHistory(d.source.depth) && this.scaleFuture(d.target.depth))
-                      return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleFuture(d.target.depth))(.5) - this.nodeWidth/2;
+                      return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleFuture(d.target.depth))(.5) - this.nodeWidth/4;
                     else if (this.scaleFuture(d.source.depth))
-                      return d3.interpolate(this.scaleFuture(d.source.depth)+this.scaleFuture.bandwidth(), this.scaleFuture(d.target.depth))(.5) - this.nodeWidth/2;
+                      return d3.interpolate(this.scaleFuture(d.source.depth)+this.scaleFuture.bandwidth(), this.scaleFuture(d.target.depth))(.5) - this.nodeWidth/4;
                   })
-                  .attr('y', (d:any) => {
-                    return d.source.y1;
-                  })
-                  .attr('text-anchor', 'middle')
-                  .attr('dominant-baseline', 'central')
-                  .attr('font-family', 'Font Awesome 5 Free')
-                  .attr('stroke', '2px')
-                  .attr('fill', 'none')
-                  .style('white-space', 'nowrap')
-                  // .attr('opacity', (d:any) => {
-                  //   if (!this.scaleHistory(d.target.depth))
-                  //     return 0;
-                  //   return 1;
-                  // })
-                  .attr('font-weight', 900)
-                  .attr('font-size', '1em')
-                  .attr('overflow', 'visible')
-                  .html((d:any) => {
-                    let change = this.provenanceOverlayModel.provenance.activity[d.wdf["prov:activity"]];
-                    let htmlText = "<span>";
-                    if (d.source.sourceLinks && d.source.sourceLinks.length === 1) {
-                      if(this.provenanceOverlayModel.provenance.activity["facet:" + d.target.key.replace("history_entry:","")]) {
-                        htmlText += '<i class="fa fa-1x fa-filter"></i> ';
-                      }
-                      htmlText += '<i class="fa fa-1x ' + iconCodes.default[change["prov:label"]] + '"></i></span>'; //iconCodes.default[d.entity["prov:label"]]
-                      return htmlText;
-                    } else
-                      return '<i class="fa fa-1x fa-ellipsis-v"></i>';
-                  });
+                .attr('y', (d:any) => {
+                  return d.source.y1;
+                })
+                .html((d:any) => '<i class="fa fa-1x fa-filter"></i> ')
+                .on("mouseover", (data:any) => {
+                  let id = data.target.key.replace("history_entry:","");
+                  let facet = this.provenanceOverlayModel.provenance.activity["facet:" + id];
+                  let text = Object.entries(facet)
+                    .map((d:any) => { 
+                      if (d[0].includes("facet:_"))
+                        return d[0].replace("facet:_", "") + ": " + d[1].$
+                      if (d[0].includes("facet:"))
+                        return d[0].replace("facet:", "") + ": " + d[1].$
+                    }).filter(d => d != null);
+                  div.transition()
+                    .duration(100)
+                    .style("opacity", .9);
+                  if(facet["other:" + id]) {
+                  div.html("<span><b>Filter " + facet["other:" + id].$ + " rows</b></span><br><span>" + text.join("<br>") + "</span>")
+                      .style("left", (d3.event.pageX - div.node().scrollWidth) + "px")
+                      .style("top", (d3.event.pageY - 28) + "px");
 
-              this.sankeyLinks.on("mouseover", (data:any) => {
+                  }
+                  divChange.style("opacity", 0);
+                  return text;
+                });
+
+              this.sankeyLinks.selectAll("path").on("mouseover", (data:any) => {
                 let id = data.target.key.replace("history_entry:","");
+
+                d3.select(this).raise();
+                let change = this.provenanceOverlayModel.provenance.entity[data.wdf["prov:generatedEntity"]];
+                let text = "<span><b>Operation:</b> "+ change["prov:value"].$ +"</span>";
+                divChange.html(text)
+                  .style("top", (d3.event.pageY - 28) + "px")
+                  .style("left", (d3.event.pageX - div.node().scrollWidth) + "px");
+                divChange.transition()
+                  .duration(100)
+                  .style("opacity", .9);
 
                 if(this.provenanceOverlayModel.provenance.activity["facet:" + id]) {
                   let facet = this.provenanceOverlayModel.provenance.activity["facet:" + id];
@@ -229,21 +283,24 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                       if (d[0].includes("facet:"))
                         return d[0].replace("facet:", "") + ": " + d[1].$
                     }).filter(d => d != null);
-                div.transition()
-                  .duration(100)
-                  .style("opacity", .9);
-                
-                if(facet["other:" + id]) {
-                  div.html("<span><b>Filter " + facet["other:" + id].$ + " rows</b></span><br><span>" + text.join("<br>") + "</span>")
-                    .style("left", (d3.event.pageX) + "px")
-                    .style("top", (d3.event.pageY - 28) + "px");
-                }
-                return text;
+                  
+                  if(facet["other:" + id]) {
+                    div.html("<span><b>Filter " + facet["other:" + id].$ + " rows</b></span><br><span>" + text.join("<br>") + "</span>")
+                      .style("left", (d3.event.pageX - div.node().scrollWidth) + "px")
+                      .style("top", (d3.event.pageY - 28 - div.node().scrollHeight) + "px");
+                  }
+                  div.transition()
+                    .duration(100)
+                    .style("opacity", .9);
+                  return text;
                 }
               })
               .on("mouseout", (d:any) => {
                 div.transition()
-                  .duration(100)
+                  // .duration(100)
+                  .style("opacity", 0);
+                divChange.transition()
+                  // .duration(100)
                   .style("opacity", 0);
               });
 
@@ -296,20 +353,13 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   div.transition()
                     .duration(100)
                     .style("opacity", .9);
-                  if (data.entity) {
-                    div.html("<span>" + data.entity["prov:value"]["$"] + "</span>")
+                  // let id = data.key.replace("history_entry:","")
+
+                  let datasetRows = this.provenanceOverlayModel.provenance.entity["project_info:dataset"]["other:" + data.key.replace("history_entry:","")]
+                  // if (data.entity) {
+                    div.html("<span>Rows: "+ datasetRows.$ +"</span>")
                       .style("left", (d3.event.pageX) + "px")
                       .style("top", (d3.event.pageY - 28) + "px");
-                  } else {
-                    let text = Object.entries(data.activity).map((d:any) => {
-                      if (d[0].includes("facet:"))
-                        return d[0].replace("facet:", "") + ": " + d[1].$
-                    }).filter(d => d != null);
-                    div.html("<span><b>Filter</b></span><br><span>" + text.join("<br>") + "</span>")
-                      .style("left", (d3.event.pageX) + "px")
-                      .style("top", (d3.event.pageY - 28) + "px");
-                      return text;
-                  }
                 })
                 .on("mouseout", (d:any) => {
                   div.transition()
@@ -637,21 +687,25 @@ export class RefineProvenanceExplorerComponent implements OnInit {
         })
         .transition(this.transition);
 
-      this.sankeyLinks.selectAll("foreignObject")
+      this.sankeyLinks.selectAll("foreignObject.change")
         .attr('x', (d:any) => {
           if(this.scaleHistory(d.source.depth) && this.scaleHistory(d.target.depth))
-            return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleHistory(d.target.depth))(.5) - this.nodeWidth/2;
+            return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleHistory(d.target.depth))(.85) - this.nodeWidth/4;
           else if (this.scaleHistory(d.source.depth) && this.scaleFuture(d.target.depth))
-            return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleFuture(d.target.depth))(.5) - this.nodeWidth/2;
+            return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleFuture(d.target.depth))(.85) - this.nodeWidth/4;
           else if (this.scaleFuture(d.source.depth))
-            return d3.interpolate(this.scaleFuture(d.source.depth)+this.scaleFuture.bandwidth(), this.scaleFuture(d.target.depth))(.5) - this.nodeWidth/2;
-        })
-        // .attr('opacity', (d:any) => {
-        //   if (!this.scaleHistory(d.target.depth))
-        //     return 0;
-        //   return 1;
-        // })
-        .transition(this.transition);
+            return d3.interpolate(this.scaleFuture(d.source.depth)+this.scaleFuture.bandwidth(), this.scaleFuture(d.target.depth))(.85) - this.nodeWidth/4;
+        });
+
+      this.sankeyLinks.selectAll("foreignObject.facet")
+        .attr('x', (d:any) => {
+            if(this.scaleHistory(d.source.depth) && this.scaleHistory(d.target.depth))
+              return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleHistory(d.target.depth))(.5) - this.nodeWidth/4;
+            else if (this.scaleHistory(d.source.depth) && this.scaleFuture(d.target.depth))
+              return d3.interpolate(this.scaleHistory(d.source.depth)+this.scaleHistory.bandwidth(), this.scaleFuture(d.target.depth))(.5) - this.nodeWidth/4;
+            else if (this.scaleFuture(d.source.depth))
+              return d3.interpolate(this.scaleFuture(d.source.depth)+this.scaleFuture.bandwidth(), this.scaleFuture(d.target.depth))(.5) - this.nodeWidth/4;
+          })
     }
   }
 

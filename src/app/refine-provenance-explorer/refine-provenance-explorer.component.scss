@@ -66,3 +66,15 @@ g.icons rect.jointSelected {
     stroke: gray;
     stroke-width: 2px;
 }
+
+g.links foreignObject {
+    text-anchor: middle;
+    dominant-baseline: central;
+    font-family: Font Awesome 5 Free;
+    stroke: 2px;
+    fill: none;
+    white-space: nowrap;
+    font-weight: 900;
+    font-size: 1em;
+    overflow: visible;
+}
