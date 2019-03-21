@@ -137,6 +137,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   private renderQualityView(nodeHistory: any[], scale: any, rootElement: any, inverted: boolean) {
 
     let historyFlow = [];
+    let shiftHistoryFlow = [];
     let metricColPair = [];
 
     this.div = d3.select("body").append("div")
@@ -169,6 +170,60 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
         historyFlow.push({historyEntry: historyEntry, metrics: metrics});
     }
 
+    if (this.shiftNodeHistory && this.shiftNodeHistory.length > 0) {
+      for (let historyEntry of this.shiftNodeHistory) {
+        let quality = [];
+        historyEntry.id = historyEntry.id;
+        for (let ent in this.provenanceOverlayModel.provenance.entity) {
+          // let histId = entity[0].replace("history_entry:", "");
+          if (this.provenanceOverlayModel.provenance.entity[ent]["quality:"+historyEntry.id])
+            quality.push({col: ent, metrics: this.provenanceOverlayModel.provenance.entity[ent]["quality:"+historyEntry.id]});
+        };
+        let metrics = [];
+        for (let pair of Object.values(quality)) {
+          for (let m of pair.metrics) {
+            if (!metricColPair.some(obj => obj.metric === m.type && obj.column === pair.col ))
+              metricColPair.push({metric: m.type, column: pair.col});
+            let found = metrics.find((metric: any, idx: number, array: any[]) => {
+              return metric.name == m.type;
+            });
+            if (found != null)
+              found.values.push({value: m.$, column: pair.col});
+            else
+              metrics.push({name: m.type, values: [{value: m.$, column: pair.col}]})
+          }
+        }
+        if (metrics.length > 0)
+          shiftHistoryFlow.push({historyEntry: historyEntry, metrics: metrics});
+      }
+      for (let historyEntry of this.nodeHistory) {
+        let quality = [];
+        historyEntry.id = historyEntry.id;
+        for (let ent in this.provenanceOverlayModel.provenance.entity) {
+          // let histId = entity[0].replace("history_entry:", "");
+          if (this.provenanceOverlayModel.provenance.entity[ent]["quality:"+historyEntry.id])
+            quality.push({col: ent, metrics: this.provenanceOverlayModel.provenance.entity[ent]["quality:"+historyEntry.id]});
+        };
+        let metrics = [];
+        for (let pair of Object.values(quality)) {
+          for (let m of pair.metrics) {
+            if (!metricColPair.some(obj => obj.metric === m.type && obj.column === pair.col ))
+              metricColPair.push({metric: m.type, column: pair.col});
+            let found = metrics.find((metric: any, idx: number, array: any[]) => {
+              return metric.name == m.type;
+            });
+            if (found != null)
+              found.values.push({value: m.$, column: pair.col});
+            else
+              metrics.push({name: m.type, values: [{value: m.$, column: pair.col}]})
+          }
+        }
+        if (metrics.length > 0)
+          shiftHistoryFlow.push({historyEntry: historyEntry, metrics: metrics});
+      }
+    }
+
+
     metricColPair.sort((a: any, b:any) => {
       let fullColA = this.provenanceOverlayModel.columnIds.find((d:any) => d.localPart === a.column.replace("column:",""));
       let fullColB = this.provenanceOverlayModel.columnIds.find((d:any) => d.localPart === b.column.replace("column:",""));
@@ -196,8 +251,23 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
           return parseFloat(metric.value);
         else return 0;
       })(historyFlow);
+    
+    let arr: any[] = Array.prototype.concat.apply([], stack[stack.length-1]);
+    
+    // get heights of shift stack
+    if (shiftHistoryFlow.length > 0) {
+      let shiftStack = d3.stack()
+        .keys(metricColPair)
+        .value((d: any, key: any, j, data) => {
+          let metricStack = d.metrics.find((d:any) => { return d.name === key.metric });
+          let metric = metricStack.values.find((obj => obj.column === key.column));
+          if (metric)
+            return parseFloat(metric.value);
+          else return 0;
+        })(shiftHistoryFlow);
+      arr = arr.concat(Array.prototype.concat.apply([], shiftStack[shiftStack.length-1]));
+    }
 
-    let arr = Array.prototype.concat.apply([], stack[stack.length-1]);
     let maxVal = Math.max.apply(Math, arr);
     // max scale needs to be determined // we also leave space for multiple selection guiding icons
     let y = d3.scaleLinear().rangeRound([this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding, 0]).domain([0, maxVal]).nice();
@@ -436,11 +506,20 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
             let smMetric = issueSmArr.issues.find((mVal:any) => issuesLarger[arrIdx].issues[m].metric === mVal.metric);
             if (smMetric) {
               for (let i = 0; i < issuesLarger[arrIdx].issues[m].indices.length;) {
-                if (smMetric.indices.includes(issuesLarger[arrIdx].issues[m].indices[i]))
+                let smMetricIndex = smMetric.indices.indexOf(issuesLarger[arrIdx].issues[m].indices[i]);
+                if (smMetricIndex >= 0) {
                   issuesLarger[arrIdx].issues[m].indices.splice(i, 1);
+                  smMetric.indices.splice(smMetricIndex, 1);
+                }
                 else
                   ++i;
               }
+              for (let i = 0; i < smMetric.indices.length; i++) {
+                if (!issuesLarger[arrIdx].issues[m].indices.includes(smMetric.indices[i])) {
+                  issuesLarger[arrIdx].issues[m].indices.push(smMetric.indices[i]);
+                }
+              }
+              issuesLarger[arrIdx].issues[m].indices.sort(this.numericSort);
             }
           }
         }
@@ -617,11 +696,15 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
     // let translX = 25 + this.compareView.nativeElement.scrollWidth - this.detailViewWidth;
     let detailViewSvg = d3.select("#qualityComparison svg");
     d3.select('#issueView g.axis').remove();
-    let rows:number = this.provenanceOverlayModel.provenance.entity["project_info:dataset"]["other:" + this.histId].$;
-    this.renderIssueViewForHistId(this.histId, d3.select("#issueView"), this.issueViewOffset, rows, this.detailViewWidth - 25);
+    let rows:number = parseInt(this.provenanceOverlayModel.provenance.entity["project_info:dataset"]["other:" + this.histId].$);
+    let shiftRows:number = 0;
+    if (this.shiftHistId)
+      shiftRows = parseInt(this.provenanceOverlayModel.provenance.entity["project_info:dataset"]["other:" + this.shiftHistId].$);
+
+    this.renderIssueViewForHistId(this.histId, d3.select("#issueView"), this.issueViewOffset, rows > shiftRows ? rows : shiftRows, this.detailViewWidth - 25);
     d3.select("#issueView").attr("transform", "translate(" + this.issueViewOffset + ",0)");
     let scaleYRows = d3.scaleLinear()
-      .domain([0, rows])
+      .domain([0, rows > shiftRows ? rows : shiftRows])
       .range([15, this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding]);
     let yAxis = d3.axisLeft(scaleYRows);
     d3.select('#issueView g.axis').append("g")
@@ -856,5 +939,13 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
 
   private determineStrokeColor(metric: any): any {
     return d3.color(this.metricsColorScale(this.uniqueMetrics.indexOf(metric))).brighter(.75); //d.key.metric.replace("quality:", "")
+  }
+
+  private numericSort(a: number, b: number): number {
+      if (a > b)
+        return 1;
+      if (a < b)
+        return -1;
+      return 0;
   }
 }
