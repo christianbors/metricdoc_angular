@@ -38,7 +38,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   // percentage widths
   pageWidth: number = 100;
   provWidth: number = 100;
-  detailWidth: number = 40;
+  detailWidth: number = 25;
   detailHeight: number = 45;
   sankeyHeight: number = 35;
   refineHeight: number = 35;
@@ -208,8 +208,8 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   // return 0;
                 })
                 .on("mouseover", (data:any) => {
-                  let change = this.provenanceOverlayModel.provenance.entity[data.wdf["prov:generatedEntity"]];
-                  let text = "<span><b>Operation:</b> "+ change["prov:value"].$ +"</span>";
+                  let ent = this.provenanceOverlayModel.provenance.entity[data.wdf["prov:generatedEntity"]];
+                  let text = "<span><b>Operation:</b> "+ ent["prov:value"].$ +"</span>";
                   divChange.html(text)
                     .style("left", (d3.event.pageX - div.node().scrollWidth) + "px")
                     .style("top", (d3.event.pageY - 28) + "px");
@@ -222,6 +222,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   divChange.transition()
                     .duration(100)
                     .style("opacity", 0);
+                  div.style("opacity", 0);
                 });
               // these are the facets
               this.sankeyLinks.filter((link: any) => this.provenanceOverlayModel.provenance.activity["facet:" + link.target.key.replace("history_entry:","")]).append("svg:foreignObject")
@@ -240,25 +241,55 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                 .html((d:any) => '<i class="fa fa-1x fa-filter"></i> ')
                 .on("mouseover", (data:any) => {
                   let id = data.target.key.replace("history_entry:","");
-                  let facet = this.provenanceOverlayModel.provenance.activity["facet:" + id];
-                  let text = Object.entries(facet)
-                    .map((d:any) => { 
-                      if (d[0].includes("facet:_"))
-                        return d[0].replace("facet:_", "") + ": " + d[1].$
-                      if (d[0].includes("facet:"))
-                        return d[0].replace("facet:", "") + ": " + d[1].$
-                    }).filter(d => d != null);
-                  div.transition()
-                    .duration(100)
-                    .style("opacity", .9);
-                  if(facet["other:" + id]) {
-                  div.html("<span><b>Filter " + facet["other:" + id].$ + " rows</b></span><br><span>" + text.join("<br>") + "</span>")
+                  let facet:any[] = [].concat(this.provenanceOverlayModel.provenance.activity["facet:" + id]);
+                  if(facet) {}
+                  let text: string[] = [];
+                  let htmlText = "";
+                  for (let f of facet) {
+                    text = text.concat(Object.entries(f)
+                      .map((d:any) => { 
+                        if (d[0].includes("facet:_")) {
+                          if(d[1].$ == "true") {
+                            return d[0].replace("facet:_","");
+                          } else if (d[1].$ == "false")
+                          {
+                            // do nothing
+                          }
+                          else {
+                            return d[0].replace("facet:_", "") + ": " + d[1].$;
+                          }
+                        }
+                        if (d[0].includes("facet:")) {
+                          if(d[1].$ == "true") {
+                            return d[0].replace("facet:","");
+                          } else if (d[1].$ == "false")
+                          {
+                            // do nothing
+                          }
+                          else {
+                            return d[0].replace("facet:", "") + ": " + d[1].$;
+                          }
+                          // return d[0].replace("facet:", "") + ": " + d[1].$
+                        }
+                      }).filter(d => d != null));
+                      div.transition()
+                        .duration(100)
+                        .style("opacity", .9);
+                    htmlText += "<span><b>Filter " + f["other:" + id].$ + " rows</b></span><br><span>" + text.join("<br>") + "</span>";
+                  }
+                  // if(facet["other:" + id]) {
+                  div.html(htmlText)//"<span><b>Filter " + facet["other:" + id].$ + " rows</b></span><br><span>" + text.join("<br>") + "</span>")
                       .style("left", (d3.event.pageX - div.node().scrollWidth) + "px")
                       .style("top", (d3.event.pageY - 28) + "px");
 
-                  }
+                  // }
                   divChange.style("opacity", 0);
                   return text;
+                })
+                .on("mouseout", (d:any, i, el:any[]) => {
+                  div.transition()
+                    // .duration(100)
+                    .style("opacity", 0);
                 });
 
               this.sankeyLinks.selectAll("path").on("mouseover", (data:any, i, el:any[]) => {
@@ -279,11 +310,12 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   let text = Object.entries(facet)
                     .map((d:any) => { 
                       if (d[0].includes("facet:_"))
-                        return d[0].replace("facet:_", "") + ": " + d[1].$
+                        return d[0].replace("facet:_", "") + ": <i>" + d[1].$.split(",").join("<br>") + "</i>";
                       if (d[0].includes("facet:"))
-                        return d[0].replace("facet:", "") + ": " + d[1].$
+                        return d[0].replace("facet:", "") + ": " + d[1].$.split(",").join("<br>") + "</i>";
                     }).filter(d => d != null);
                   
+                  // "test test test".split(",").join()
                   if(facet["other:" + id]) {
                     div.html("<span><b>Filter " + facet["other:" + id].$ + " rows</b></span><br><span>" + text.join("<br>") + "</span>")
                       .style("left", (d3.event.pageX - div.node().scrollWidth) + "px")
@@ -483,7 +515,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   linkSkewed(d: any): any {
     var curvature = .6;
     let id = parseInt(d.target.key.replace("history_entry:",""));
-    let facet = this.provenanceOverlayModel.provenance.activity["facet:" + id];
+    let facet = [].concat(this.provenanceOverlayModel.provenance.activity["facet:" + id]);
     // var x0 = d.source.x1,
     //     x1 = d.target.x0;
     let x0 = this.scaleHistory(d.source.depth) + this.scaleHistory.bandwidth(),
@@ -506,8 +538,8 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
     let path =  "M" + x0 + "," + y0
     
-    if (facet && facet["other:"+id]) {
-      let heightRatio = parseInt(facet["other:"+id].$)/d.source.value;
+    if (facet[0] && facet[0]["other:"+id]) {
+      let heightRatio = parseInt(facet[0]["other:"+id].$)/d.source.value;
       path += "C" + xi(.2) + "," + y0
         + " " + xi(.3) + "," + (y0+ (d.source.y1 - d.source.y0)*(1-heightRatio))
         + " " + xi(.5) + "," + (y0+ (d.source.y1 - d.source.y0)*(1-heightRatio))
@@ -604,7 +636,10 @@ export class RefineProvenanceExplorerComponent implements OnInit {
       .map(node => node.depth).sort(this.numericSort);
     if (depths[depths.length-1] < maxDepth)
       depths.push(-1);
-    this.scaleHistory = d3.scaleBand().domain(depths).range([this.elementPadding, parseFloat(this.provGraph.nativeElement.scrollWidth)*((this.provWidth-this.detailWidth)/100) - this.elementPadding]).paddingInner(this.innerPadding);
+    if(this.showDetail)
+      this.scaleHistory = d3.scaleBand().domain(depths).range([this.elementPadding, parseFloat(this.provGraph.nativeElement.scrollWidth)*((this.provWidth-this.detailWidth)/100) - this.elementPadding]).paddingInner(this.innerPadding);
+    else
+      this.scaleHistory = d3.scaleBand().domain(depths).range([this.elementPadding, parseFloat(this.provGraph.nativeElement.scrollWidth)*.8 - this.elementPadding]).paddingInner(this.innerPadding);
 
     let depthsFuture = [];
     depthsFuture.push(-1);
@@ -615,7 +650,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
     depthsFuture.sort(this.numericSort);
     
     let futureWidth
-    if (depthsFuture.length < depths.length)
+    if (this.showDetail && depthsFuture.length < depths.length-1)
       futureWidth = this.scaleHistory(depths[depths.length-2]) + this.scaleHistory.step()*(depthsFuture.length-1);//this.provGraph.nativeElement.scrollWidth - (this.scaleHistory(depths[depths.length-2]) + this.scaleHistory(depths[depths.length-(depthsFuture.length)]) - this.scaleHistory(depths[depths.length-(depthsFuture.length+1)]) - this.elementPadding);
     else
       futureWidth = this.provGraph.nativeElement.scrollWidth;
@@ -630,9 +665,9 @@ export class RefineProvenanceExplorerComponent implements OnInit {
       this.detailViewWidth = parseFloat(this.provGraph.nativeElement.scrollWidth)*(this.detailWidth/100) - this.scaleHistory.bandwidth();
     }
     // we don't want the detail view to be to wide
-    if (this.detailViewWidth > this.provGraph.nativeElement.scrollWidth * 0.4) {
-      this.detailViewWidth = this.provGraph.nativeElement.scrollWidth * 0.4;
-    }
+    // if (this.detailViewWidth > this.provGraph.nativeElement.scrollWidth * 0.35) {
+    //   this.detailViewWidth = this.provGraph.nativeElement.scrollWidth * 0.35;
+    // }
 
     if (this.sankeyNodes) {
       this.sankeyNodes.selectAll("rect")

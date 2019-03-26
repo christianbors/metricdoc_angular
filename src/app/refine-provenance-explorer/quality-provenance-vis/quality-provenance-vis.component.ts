@@ -39,6 +39,8 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
 
   iconWidth:number = 16;
 
+  issueViewHistId: any;
+
   // @ViewChild('qualityView')
   // svgQualityView:ElementRef;
   detailIssueView:ElementRef;
@@ -50,6 +52,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   errorMessage;
   uniqueMetrics: string[] = [];
   metricsColorScale;
+  greyMetricsColorScale;
 
   columnModel: any;
   provenanceOverlayModel: any;
@@ -334,13 +337,22 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
         })
         .attr("width", scale.bandwidth())
         .on("mouseover", (quality:any, i:number, el:any) => {
+          if (quality.data.historyEntry.id != this.issueViewHistId) {
+            let rows:number = parseInt(this.provenanceOverlayModel.provenance.entity["project_info:dataset"]["other:" + quality.data.historyEntry.id].$);
+            let shiftRows:number = 0;
+            if (this.shiftHistId)
+              shiftRows = parseInt(this.provenanceOverlayModel.provenance.entity["project_info:dataset"]["other:" + this.shiftHistId].$);
+
+            this.renderIssueViewForHistId(quality.data.historyEntry.id, d3.select("#issueView"), this.issueViewOffset, rows > shiftRows ? rows : shiftRows, this.detailViewWidth - 25);
+          }
+          
           d3.select(el[i])
             .attr("stroke-width", 1.5)
             .attr("stroke-opacity", 1);
           this.div.transition()
             .duration(100)
             .style("opacity", .9);
-          this.div.html(quality.data.column + " " + quality.data.metric + " measure: " + quality.data.value)
+          this.div.html(quality.data.column + " " + quality.data.metric + "<br>measure: " + quality.data.value)
             .style("left", (d3.event.pageX) + "px")
             .style("top", (d3.event.pageY - 28) + "px");
             
@@ -438,8 +450,18 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
           return this.linkSkewed(d, y, x0, x1);
         })
         .on("mouseover", (quality:any, i:number, el:any) => {
-          d3.select(el[i]).classed("metric-link", true)
-            .attr("stroke-width", 1);
+          d3.select("#comparisonView").selectAll("g." + quality.key.column.replace("column:", "") + "." + quality.key.metric.replace("quality:", ""))
+            .attr("stroke-width", 1.5)
+            .attr("stroke-opacity", 1)
+            .attr("fill", this.determineStrokeColor(quality.key.metric.replace("quality:", "")));
+          let gr = d3.select("#comparisonView").selectAll("g.issueLinks").selectAll("g." + quality.key.column.replace("column:", "") + "." + quality.key.metric.replace("quality:", "") + " rect")
+            .attr("stroke-width", 1)
+            .attr("stroke-opacity", 1)
+          gr.selectAll("path")
+            .classed("metric-link", true)
+            .attr("fill", this.determineStrokeColor(quality.key.metric.replace("quality:", "")));
+          // d3.select(el[i]).classed("metric-link", true)
+          //   .attr("stroke-width", 1);
             // .attr("stroke-opacity", 1);
           this.div.transition()
             .duration(100)
@@ -451,9 +473,19 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
             .style("left", (d3.event.pageX) + "px")
             .style("top", (d3.event.pageY - 28) + "px");
         })
-        .on("mouseout", (d:any, i:number, el:any) => {
-          d3.select(el[i]).classed("metric-link",  (quality:any) => quality.from.data.value != quality.to.data.value)
-            .attr("stroke-width", null);
+        .on("mouseout", (quality:any, i:number, el:any) => {
+          d3.select("#comparisonView").selectAll("g." + quality.key.column.replace("column:", "") + "." + quality.key.metric.replace("quality:", ""))
+            .attr("stroke-width", .85)
+            .attr("stroke-opacity", .6)
+            .attr("fill", this.determineColor(quality.key.metric.replace("quality:", "")));
+          let gr = d3.select("#comparisonView").selectAll("g.issueLinks").selectAll("g." + quality.key.column.replace("column:", "") + "." + quality.key.metric.replace("quality:", "") + " rect")
+            .attr("stroke-opacity", 0);
+          gr.selectAll("path")
+            .classed("metric-link", (quality:any) => quality.from.data.value != quality.to.data.value)
+            .attr("fill", this.determineColor(quality.key.metric.replace("quality:", "")));
+
+          // d3.select(el[i]).classed("metric-link",  (quality:any) => quality.from.data.value != quality.to.data.value)
+          //   .attr("stroke-width", null);
           this.div.transition()
             .duration(100)
             .style("opacity", 0);
@@ -689,6 +721,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
     //   .transition(this.transition)
     //     .style("fill-opacity", 1e-6)
     //   .remove();
+    this.issueViewHistId = histId;
   }
 
 
@@ -736,34 +769,36 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
     // this.sankeyDiag().links.forEach((link: any) => {
 
     // })
-    element.selectAll("foreignObject")
-      .data(history).enter()
-      .append("svg:foreignObject")
-        .attr('x', (d:any) => {
-          if (d.depth > 0) {
+    if (scale.step() > this.iconWidth) {
+      element.selectAll("foreignObject")
+        .data(history).enter()
+        .append("svg:foreignObject")
+          .attr('x', (d:any) => {
+            if (d.depth > 0) {
+              if (inverted)
+                return d3.interpolate(scale(d.depth), scale(d.depth) + scale.step())(.5);
+              
+              return d3.interpolate(scale(d.depth), scale(d.depth) - scale.step())(.5);
+            } 
             if (inverted)
-              return d3.interpolate(scale(d.depth), scale(d.depth) + scale.step())(.5);
-            
-            return d3.interpolate(scale(d.depth), scale(d.depth) - scale.step())(.5);
-          } 
-          if (inverted)
-            return scale(0) + this.iconWidth/4 + scale.bandwidth();
-        })
-        .attr('y', (d:any) => this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding/2)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'central')
-        .attr('font-family', 'Font Awesome 5 Free')
-        .attr('fill', 'black')
-        .attr('font-weight', 900)
-        .attr('overflow', 'visible')
-        .attr('height', this.iconWidth)
-        .attr('width', this.iconWidth)
-        .style('padding-left', '0px')
-        .html((data:any) => {
-          if (data.value)
-            return '<i class="fa fa-1x ' + iconCodes.default[data.value["prov:label"]] + '"></i>';
-          return '<i class="fa fa-1x fa-chart-bar"></i>';
-        });
+              return scale(0) + this.iconWidth/4 + scale.bandwidth();
+          })
+          .attr('y', (d:any) => this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding/2)
+          .attr('text-anchor', 'middle')
+          .attr('dominant-baseline', 'central')
+          .attr('font-family', 'Font Awesome 5 Free')
+          .attr('fill', 'black')
+          .attr('font-weight', 900)
+          .attr('overflow', 'visible')
+          .attr('height', this.iconWidth)
+          .attr('width', this.iconWidth)
+          .style('padding-left', '0px')
+          .html((data:any) => {
+            if (data.value)
+              return '<i class="fa fa-1x ' + iconCodes.default[data.value["prov:label"]] + '"></i>';
+            return '<i class="fa fa-1x fa-chart-bar"></i>';
+          });
+    }
   }
 
   private linkShiftViews() {
@@ -792,7 +827,8 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
           .attr("fill-opacity", .4)
           .classed("metric-link", true)
         .append("path")
-          .attr("d", this.linkRect(x0, x1, y0, y1, h0, h1));
+          .attr("d", this.linkRect(x0, x1, y0, y1, h0, h1))
+          .attr("stroke-width", "2px");
       })
   }
 
@@ -896,12 +932,12 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
           // y0 = yFunction(d.from[0]),
           // y1 = yFunction(d.to[0]);
       return "M" + x0 + "," + y0
-           + "C" + x2 + "," + y0
-           + " " + x3 + "," + y1
+           // + "C" + x2 + "," + y0
+           // + " " + x3 + "," + y1
            + " " + x1 + "," + y1
            + "L" + x1 + "," + (y1+ height1)
-           + "C" + x3 + "," + (y1+ height1)
-           + " " + x2 + "," + (y0+ height0)
+           // + "C" + x3 + "," + (y1+ height1)
+           // + " " + x2 + "," + (y0+ height0)
            + " " + x0 + "," + (y0+ height0)
            + "L" + x0 + "," + y0;
     // }
@@ -931,10 +967,15 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
 
   private initializeColorScale() {
     this.metricsColorScale = d3.scaleSequential(d3.interpolateViridis).domain([-1, this.uniqueMetrics.length+1]);
+    this.greyMetricsColorScale = d3.scaleSequential(d3.interpolateGreys).domain([-1, this.uniqueMetrics.length+1]);
   }
 
   private determineColor(metric: any): any {
     return d3.color(this.metricsColorScale(this.uniqueMetrics.indexOf(metric))); //d.key.metric.replace("quality:", "")
+  }
+
+  private determineGreyColor(metric: any): any {
+    return d3.color(this.greyMetricsColorScale(this.uniqueMetrics.indexOf(metric))); //d.key.metric.replace("quality:", "")
   }
 
   private determineStrokeColor(metric: any): any {
