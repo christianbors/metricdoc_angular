@@ -45,7 +45,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   // svgQualityView:ElementRef;
   detailIssueView:ElementRef;
   issueViewOffset:number;
-  @ViewChild('qualityComparison')
+  @ViewChild('qualityComparison', {static: false})
   compareView:ElementRef;
   div;
 
@@ -57,7 +57,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   columnModel: any;
   provenanceOverlayModel: any;
 
-  @ViewChild('issueView') set content(content: ElementRef) {
+  @ViewChild('issueView', {static: false}) set content(content: ElementRef) {
     this.detailIssueView = content;
     if (this.detailIssueView && this.provenanceOverlayModel) {
       // this.issueViewOffset = this.elementPadding + this.compareView.nativeElement.scrollWidth - this.detailViewWidth;

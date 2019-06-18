@@ -54,8 +54,8 @@ export class RefineProvenanceExplorerComponent implements OnInit {
 
   showDetail: boolean = true;
 
-  @ViewChild('qualityMetric') public metricMenu: ContextMenuComponent;
-  @ViewChild('issue') public issueMenu: ContextMenuComponent;
+  @ViewChild('qualityMetric', {static: false}) public metricMenu: ContextMenuComponent;
+  @ViewChild('issue', {static: false}) public issueMenu: ContextMenuComponent;
 
   //@ViewChild('provGraph') 
   provGraph:ElementRef;
@@ -866,7 +866,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
     // });
   }
   
-  @ViewChild('provGraph') set content(content: ElementRef) {
+  @ViewChild('provGraph', {static: false}) set content(content: ElementRef) {
     this.provGraph = content;
     console.log("set graph");
     if(this.provGraph && this.provenanceOverlayModel) {

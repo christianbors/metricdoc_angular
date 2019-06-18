@@ -13,7 +13,7 @@ import { Row } from '../data-model/row';
 import { ContextMenuComponent, ContextMenuService } from 'ngx-contextmenu';
 
 import * as d3 from 'd3';
-import * as d3Tip from 'd3-tip';
+import d3Tip from 'd3-tip';
 
 @Injectable()
 @Component({
@@ -40,12 +40,12 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   // external js libraries
   tooltip;
 
-  @ViewChild('headerCols') headerCols;
-  @ViewChild('bodyCols') bodyCols;
-  @ViewChild('rawDataBody') dataBody;
-  @ViewChild('colOverviewHead') colHead;
-  @ViewChild('spanOverviewHead') spanHead;
-  @ViewChild('tableOverlay') tableOverlay;
+  @ViewChild('headerCols', {static: false}) headerCols;
+  @ViewChild('bodyCols', {static: false}) bodyCols;
+  @ViewChild('rawDataBody', {static: false}) dataBody;
+  @ViewChild('colOverviewHead', {static: false}) colHead;
+  @ViewChild('spanOverviewHead', {static: false}) spanHead;
+  @ViewChild('tableOverlay', {static: false}) tableOverlay;
   overlayOffsetTop:number = 0;
   overlayWidth:number = 0;
   bodyHeight: number = 0;
@@ -56,8 +56,8 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   @Output() pageChangedEmitter = new EventEmitter();
   @Output() sortEmitter = new EventEmitter();
 
-  @ViewChild('existingMetric') public existingMenu: ContextMenuComponent;
-  @ViewChild('newMetric') public newMenu: ContextMenuComponent;
+  @ViewChild('existingMetric', {static: false}) public existingMenu: ContextMenuComponent;
+  @ViewChild('newMetric', {static: false}) public newMenu: ContextMenuComponent;
 
   selectedMetricCells: any;
   selectedMetrics: Metric[];
@@ -78,8 +78,8 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
       itemsPerPage: this.itemsPerPage 
     });
 
-    var tip = require('d3-tip');
-    this.tooltip = tip().attr('class', 'd3-tip')
+    // var tip = require('d3-tip');
+    this.tooltip = d3Tip().attr('class', 'd3-tip')
       .offset([-10, 0]);
 
     this.selectedMetricCells = {};

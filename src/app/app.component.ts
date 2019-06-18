@@ -1,4 +1,4 @@
-import { Component, HostBinding, AnimationTransitionEvent } from '@angular/core';
+import { Component, HostBinding } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { GlobalNavService } from './global-nav.service';
 

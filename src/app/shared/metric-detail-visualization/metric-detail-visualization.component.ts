@@ -2,7 +2,7 @@ import { Component, OnInit, Input, Output, EventEmitter, ElementRef, OnChanges, 
 import { EvalTuple } from '../open-refine/model/eval-tuple';
 
 import * as d3 from 'd3';
-import * as d3Tip from 'd3-tip';
+import d3Tip from 'd3-tip';
 
 @Component({
   selector: 'metric-detail-view',
@@ -21,7 +21,7 @@ export class MetricDetailVisualizationComponent implements OnInit, OnChanges {
   @Input() rowsFrom;
   @Input() rowsTo;
 
-  @ViewChild('visParent') svg;
+  @ViewChild('visParent', {static: false}) svg;
 
   @Output() onDataRowsSelected = new EventEmitter();
 
@@ -46,8 +46,9 @@ export class MetricDetailVisualizationComponent implements OnInit, OnChanges {
   constructor(private element: ElementRef) {
     this.htmlElement = this.element.nativeElement;
 
-    let tip = require('d3-tip');
-    this.tooltip = tip()
+    // let d3tip = require('d3-tip')(d3);
+    let tip = d3Tip();
+    this.tooltip = tip
       .attr('class', 'd3-tip')
       .offset([-10, 0]);
   }

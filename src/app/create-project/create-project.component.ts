@@ -1,6 +1,6 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { Router, ActivatedRoute, ParamMap } from '@angular/router';
-import { DOCUMENT } from "@angular/platform-browser";
+import { DOCUMENT } from "@angular/common";
 
 import { OpenRefineService }  from '../shared/open-refine/open-refine.service';
 import { ProjectMetadata }    from '../shared/open-refine/model/project-metadata';

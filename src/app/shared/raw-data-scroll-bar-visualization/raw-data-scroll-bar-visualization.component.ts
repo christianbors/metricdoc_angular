@@ -2,6 +2,7 @@ import { Component, Input, ViewChild, ElementRef, OnInit, OnChanges, SimpleChang
 import { Metric } from '../open-refine/model/metric'
 
 import * as d3 from 'd3';
+import d3Tip from 'd3-tip';
 
 @Component({
   selector: '[scroll-bar-vis]',
@@ -33,8 +34,9 @@ export class RawDataScrollBarVisualizationComponent implements OnInit, OnChanges
   constructor(private element: ElementRef) {
     this.htmlElement = this.element.nativeElement;
     this.host = d3.select(this.element.nativeElement);
-    let tip = require('d3-tip');
-    this.tooltip = tip()
+    // let d3tip = require('d3-tip')(d3);
+    let tip = d3Tip();
+    this.tooltip = tip
       .attr('class', 'd3-tip')
       .offset([-10, 0]);
   }

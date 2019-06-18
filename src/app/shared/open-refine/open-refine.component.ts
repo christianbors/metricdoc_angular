@@ -1,6 +1,5 @@
 // Observable Version
-import { Component, OnInit, Input, OnChanges, SimpleChanges, ViewChild, 
-  trigger, state, style, transition, animate, keyframes }	from '@angular/core';
+import { Component, OnInit, Input, OnChanges, SimpleChanges, ViewChild } from '@angular/core'; // trigger, state, transition, style, animate, keyframes
 import { Router, ActivatedRoute, ParamMap } from '@angular/router';
 import { Subscription }   from 'rxjs/Subscription';
 
@@ -19,33 +18,21 @@ import { NgbModule, NgbAccordion, NgbRadioGroup } from '@ng-bootstrap/ng-bootstr
   templateUrl: './open-refine.component.html',
   providers: [ OpenRefineService ],
   styles: ['.error {color:red;}'],
-  styleUrls: ['./open-refine.component.scss'],
-  animations: [
-    trigger('shrinkOut', [
-        state('inactive', style({
-            height: '*'
-            // backgroundColor: '#eee'
-        })),
-        state('active', style({
-            height: 120
-            // backgroundColor: '#cfd8dc'
-        })),
-        transition('inactive => active', animate('100ms ease-in')),
-        transition('active => inactive', animate('100ms ease-out'))
-    ])//,
-
-    // trigger('movePanel', [
-        
-    //     transition('void => *', [
-    //         animate(600, keyframes([
-    //             style({opacity: 0, transform: 'translateY(-200px)', offset: 0}),
-    //             style({opacity: 1, transform: 'translateY(25px)', offset: .75}),
-    //             style({opacity: 1, transform: 'translateY(0)', offset: 1}),
-    //         ]))
-    //     ])
-
-    // ])
-  ]
+  styleUrls: ['./open-refine.component.scss']//,
+  // animations: [
+  //   trigger('shrinkOut', [
+  //       state('inactive', style({
+  //           height: '*'
+  //           // backgroundColor: '#eee'
+  //       })),
+  //       state('active', style({
+  //           height: 120
+  //           // backgroundColor: '#cfd8dc'
+  //       })),
+  //       transition('inactive => active', animate('100ms ease-in')),
+  //       transition('active => inactive', animate('100ms ease-out'))
+  //   ])
+  // ]
 })
 export class OpenRefineComponent implements OnInit, OnChanges {
   errorMessage: string;
@@ -57,7 +44,7 @@ export class OpenRefineComponent implements OnInit, OnChanges {
 
   projectId: string
 
-  @ViewChild(RawDataTableComponent)
+  @ViewChild(RawDataTableComponent, {static: false})
   rawDataTable: RawDataTableComponent;
 
   projectMetadata: ProjectMetadata;
