@@ -40,7 +40,7 @@ export class RefineProvenanceExplorerComponent implements OnInit {
   provWidth: number = 100;
   detailWidth: number = 25;
   detailHeight: number = 45;
-  sankeyHeight: number = 35;
+  sankeyHeight: number = 55;
   refineHeight: number = 35;
   // absolute widths
   qualityViewWidth: number = 0;
@@ -218,6 +218,11 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                     .style("opacity", .9);
                   div.style("opacity", 0);
                 })
+                .on("mousemove", (data:any) => {
+                  divChange
+                    .style("left", (d3.event.pageX - div.node().scrollWidth) + "px")
+                    .style("top", (d3.event.pageY - 28) + "px");
+                })
                 .on("mouseout", (data:any) => {
                   divChange.transition()
                     .duration(100)
@@ -286,6 +291,11 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   divChange.style("opacity", 0);
                   return text;
                 })
+                .on("mousemove", (data:any) => {
+                  div
+                    .style("left", (d3.event.pageX - div.node().scrollWidth) + "px")
+                    .style("top", (d3.event.pageY - 28) + "px");
+                })
                 .on("mouseout", (d:any, i, el:any[]) => {
                   div.transition()
                     // .duration(100)
@@ -306,27 +316,73 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                   .style("opacity", .9);
 
                 if(this.provenanceOverlayModel.provenance.activity["facet:" + id]) {
-                  let facet = this.provenanceOverlayModel.provenance.activity["facet:" + id];
-                  let text = Object.entries(facet)
-                    .map((d:any) => { 
-                      if (d[0].includes("facet:_"))
-                        return d[0].replace("facet:_", "") + ": <i>" + d[1].$.split(",").join("<br>") + "</i>";
-                      if (d[0].includes("facet:"))
-                        return d[0].replace("facet:", "") + ": " + d[1].$.split(",").join("<br>") + "</i>";
-                    }).filter(d => d != null);
-                  
-                  // "test test test".split(",").join()
-                  if(facet["other:" + id]) {
-                    div.html("<span><b>Filter " + facet["other:" + id].$ + " rows</b></span><br><span>" + text.join("<br>") + "</span>")
-                      .style("left", (d3.event.pageX - div.node().scrollWidth) + "px")
-                      .style("top", (d3.event.pageY - 28 - div.node().scrollHeight) + "px");
+                  // let facet = this.provenanceOverlayModel.provenance.activity["facet:" + id];
+                  let htmlText = "";
+                  let textFacet: string[] = [];
+                  let facet:any[] = [].concat(this.provenanceOverlayModel.provenance.activity["facet:" + id]);
+                  for (let f of facet) {
+                    textFacet = textFacet.concat(Object.entries(f)
+                      .map((d:any) => { 
+                        if (d[0].includes("facet:_")) {
+                          if(d[1].$ == "true") {
+                            return d[0].replace("facet:_","");
+                          } else if (d[1].$ == "false")
+                          {
+                            // do nothing
+                          }
+                          else {
+                            return d[0].replace("facet:_", "") + ": " + d[1].$;
+                          }
+                        }
+                        if (d[0].includes("facet:")) {
+                          if(d[1].$ == "true") {
+                            return d[0].replace("facet:","");
+                          } else if (d[1].$ == "false")
+                          {
+                            // do nothing
+                          }
+                          else {
+                            return d[0].replace("facet:", "") + ": " + d[1].$;
+                          }
+                          // return d[0].replace("facet:", "") + ": " + d[1].$
+                        }
+                      }).filter(d => d != null));
+                      div.transition()
+                        .duration(100)
+                        .style("opacity", .9);
+                    htmlText += "<span><b>Filter " + f["other:" + id].$ + " rows</b></span><br><span>" + textFacet.join("<br>") + "</span>";
                   }
+                  div.html(htmlText)//"<span><b>Filter " + facet["other:" + id].$ + " rows</b></span><br><span>" + text.join("<br>") + "</span>")
+                      .style("left", (d3.event.pageX - div.node().scrollWidth) + "px")
+                      .style("top", (d3.event.pageY - 28) + "px");
+                  // let text = Object.entries(facet)
+                  //   .map((d:any) => { 
+                  //     if (d[0].includes("facet:_"))
+                  //       return d[0].replace("facet:_", "") + ": <i>" + d[1].$.split(",").join("<br>") + "</i>";
+                  //     if (d[0].includes("facet:"))
+                  //       return d[0].replace("facet:", "") + ": " + d[1].$.split(",").join("<br>") + "</i>";
+                  //   }).filter(d => d != null);
+                  
+                  // // "test test test".split(",").join()
+                  // if(facet["other:" + id]) {
+                  //   div.html("<span><b>Filter " + facet["other:" + id].$ + " rows</b></span><br><span>" + text.join("<br>") + "</span>")
+                  //     .style("left", (d3.event.pageX - div.node().scrollWidth) + "px")
+                  //     .style("top", (d3.event.pageY - 28 - div.node().scrollHeight) + "px");
+                  // }
                   div.transition()
                     .duration(100)
                     .style("opacity", .9);
                   return text;
                 }
               })
+              .on("mousemove", (data:any) => {
+                div
+                  .style("left", (d3.event.pageX - div.node().scrollWidth) + "px")
+                  .style("top", (d3.event.pageY - 28 - div.node().scrollHeight) + "px");
+                divChange
+                  .style("left", (d3.event.pageX - div.node().scrollWidth) + "px")
+                  .style("top", (d3.event.pageY - 28) + "px");
+                })
               .on("mouseout", (d:any, i, el:any[]) => {
                 div.transition()
                   // .duration(100)
@@ -392,6 +448,11 @@ export class RefineProvenanceExplorerComponent implements OnInit {
                     div.html("<span>Rows: "+ datasetRows.$ +"</span>")
                       .style("left", (d3.event.pageX) + "px")
                       .style("top", (d3.event.pageY - 28) + "px");
+                })
+                .on("mousemove", (data:any) => {
+                  div
+                    .style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY - 28) + "px");
                 })
                 .on("mouseout", (d:any) => {
                   div.transition()

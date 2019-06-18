@@ -380,6 +380,11 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
                 // .attr("fill", (d:any) =>  d3.schemeDark2[this.uniqueMetrics.indexOf(quality.data.metric.replace("quality:", ""))])
           }
         })
+        .on("mousemove", (data:any) => {
+          this.div
+            .style("left", (d3.event.pageX) + "px")
+            .style("top", (d3.event.pageY - 28) + "px");
+        })
         .on("mouseout", (quality:any, i:number, el:any) => {
           d3.select(el[i])
             .attr("stroke-width", null)
@@ -387,16 +392,16 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
           this.div.transition()
             .duration(100)
             .style("opacity", 0);
-          d3.select("#comparisonView").selectAll("g." + quality.data.column.replace("column:", "") + "." + quality.data.metric.replace("quality:", ""))
-            .attr("stroke-width", .85)
-            .attr("stroke-opacity", .6)
-            .attr("fill", this.determineColor(quality.data.metric.replace("quality:", "")));
+          // d3.select("#comparisonView").selectAll("g." + quality.data.column.replace("column:", "") + "." + quality.data.metric.replace("quality:", ""))
+          //   .attr("stroke-width", .85)
+          //   .attr("stroke-opacity", .6)
+          //   .attr("fill", this.determineColor(quality.data.metric.replace("quality:", "")));
 
-          let gr = d3.select("#comparisonView").selectAll("g.issueLinks").selectAll("g." + quality.data.column.replace("column:", "") + "." + quality.data.metric.replace("quality:", "") + " rect")
-            .attr("stroke-opacity", 0);
-          gr.selectAll("path")
-            .classed("metric-link", (quality:any) => quality.from.data.value != quality.to.data.value)
-            .attr("fill", this.determineColor(quality.data.metric.replace("quality:", "")));
+          // let gr = d3.select("#comparisonView").selectAll("g.issueLinks").selectAll("g." + quality.data.column.replace("column:", "") + "." + quality.data.metric.replace("quality:", "") + " rect")
+          //   .attr("stroke-opacity", 0);
+          // gr.selectAll("path")
+          //   .classed("metric-link", (quality:any) => quality.from.data.value != quality.to.data.value)
+          //   .attr("fill", this.determineColor(quality.data.metric.replace("quality:", "")));
           
           if (parseInt(quality.data.historyEntry.id) === parseInt(this.histId) ||
             parseInt(quality.data.historyEntry.id) === parseInt(this.shiftHistId)) {
@@ -471,6 +476,10 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
             " <br><b>Change</b> from " + quality.from.data.value + 
             " to " + quality.to.data.value)
             .style("left", (d3.event.pageX) + "px")
+            .style("top", (d3.event.pageY - 28) + "px");
+        })
+        .on("mousemove", (data:any) => {
+          this.div.style("left", (d3.event.pageX) + "px")
             .style("top", (d3.event.pageY - 28) + "px");
         })
         .on("mouseout", (quality:any, i:number, el:any) => {
@@ -579,7 +588,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   
     let scaleXColumn = d3.scaleBand()
       .domain(issues.map(issuesEntry => issuesEntry.col))
-      .range([translate, translate + elementWidth]);
+      .range([translate, translate + elementWidth - 15]);
     
     let scaleYRows = d3.scaleLinear()
       .domain([0, rows])
@@ -670,7 +679,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
             .duration(100)
             .style("opacity", 1);
           if (col.__data__.col) {
-            let text = "<span>Column: " + col.__data__.col.replace("column:","") + "</span> <span>Row: " + data + "</span>";
+            let text = "<b>Detected Issue </b><br><span>Column: " + col.__data__.col.replace("column:","") + "</span> <span>Row: " + data + "</span>";
             for (let issue of col.__data__.issues) {
               if (issue.indices.includes(data))
                 text += "<br><span>Metric: " + issue.metric.replace("error:", "") + "</span>";
@@ -830,6 +839,11 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
           .attr("d", this.linkRect(x0, x1, y0, y1, h0, h1))
           .attr("stroke-width", "2px");
       })
+    d3.selectAll("#comparisonView")
+      .selectAll("g.compareA rect.hist" + this.histId)
+      .on("mouseover", (d:any) => {
+
+      });
   }
 
   private scaleComparison() {
