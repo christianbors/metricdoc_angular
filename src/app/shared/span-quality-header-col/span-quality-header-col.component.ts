@@ -29,6 +29,9 @@ export class SpanQualityHeaderColComponent implements OnChanges {
       let cellWidth = this.htmlElement.parentElement.offsetWidth - (this.colWidths[0]) - 1;
       let svg = d3.select(this.htmlElement).select("svg");
 
+      let div = d3.select("body").append("div")
+        .attr("class", "d3tooltip")
+        .style("opacity", 0);
       svg.data(this.metric);
       svg.attr("width", cellWidth)
         .attr("height", 26)
@@ -39,7 +42,10 @@ export class SpanQualityHeaderColComponent implements OnChanges {
             if(currentMetric.spanningEvaluable) 
               evalTuplesCount++;
             
-            this.tooltip.html(function(d) {
+            div.transition()
+              .duration(100)
+              .style("opacity", .9);
+            div.html(function(d) {
                 var text = "<span style='color:steelblue'>" + currentMetric.name + "</span><br>" +
                   "Metric Value: <span style='color:steelblue'>" + currentMetric.measure + "</span><br>" + 
                   "Number of Checks: <span style='color:steelblue'>" + evalTuplesCount + "</span><br>";
@@ -48,14 +54,19 @@ export class SpanQualityHeaderColComponent implements OnChanges {
                 }
                 text += "Data Type: <span style='color:steelblue'>" + currentMetric.datatype + "</span>";
                 return text;
-              })
-              //offset is strangely dependent on elements in svg, hence we need to offset it so the proper position
-              .offset([-10, (this.htmlElement.offsetWidth/2) - ((this.metric.measure*cellWidth)/2)])
-              .show(svg.data(), svg.node());
+              });
           }
         })
-        .on("mouseout", this.tooltip.hide)
-        .on("mouseleave", this.tooltip.hide);
+        .on("mouseout", () => {
+          div.transition()
+            .duration(100)
+            .style("opacity", 0);
+        })
+        .on("mouseleave", () => {
+          div.transition()
+            .duration(100)
+            .style("opacity", 0);
+        });
 
       svg.call(this.tooltip);
 

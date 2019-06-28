@@ -2,7 +2,6 @@ import { Component, Input, ViewChild, ElementRef, OnInit, OnChanges, SimpleChang
 import { Metric } from '../open-refine/model/metric'
 
 import * as d3 from 'd3';
-import d3Tip from 'd3-tip';
 
 @Component({
   selector: '[scroll-bar-vis]',
@@ -21,7 +20,6 @@ export class RawDataScrollBarVisualizationComponent implements OnInit, OnChanges
   private htmlElement: HTMLElement;
   private host;
 
-  private tooltip;
   private overlayScaleY;
 
   private overlay;
@@ -34,11 +32,6 @@ export class RawDataScrollBarVisualizationComponent implements OnInit, OnChanges
   constructor(private element: ElementRef) {
     this.htmlElement = this.element.nativeElement;
     this.host = d3.select(this.element.nativeElement);
-    // let d3tip = require('d3-tip')(d3);
-    let tip = d3Tip();
-    this.tooltip = tip
-      .attr('class', 'd3-tip')
-      .offset([-10, 0]);
   }
 
   ngOnInit() {
@@ -264,6 +257,8 @@ export class RawDataScrollBarVisualizationComponent implements OnInit, OnChanges
       .selectAll('g')
       .selectAll('g');
     d3.selectAll('rect.metrics-bin').remove();
+
+    // Define the div for the tooltip
     this.metricElements = cols.data((d:Metric) => {
         if (d.dirtyIndices) {
           if (d.concat === 'AND' && d.dirtyIndices.length > 1) {
@@ -289,22 +284,36 @@ export class RawDataScrollBarVisualizationComponent implements OnInit, OnChanges
       })
       .on('mouseover', (d, i, siblings) => {
         let rec = d3.select(siblings[i]).style('fill', 'steelblue');
-        this.tooltip.html( d => {
-            var text = '<span style="color:steelblue">Row: </span><span>'+ (d[0].index + 1) + ' </span>' ;
-            return text;
-          })
-          //offset is strangely dependent on elements in svg, hence we need to offset it to the proper position
-          .offset([-10, 0])
-          .show(rec.data(), rec.node());
+        // this.tooltip.html( d => {
+        //     var text = '<span style="color:steelblue">Row: </span><span>'+ (d[0].index + 1) + ' </span>' ;
+        //     return text;
+        //   })
+        //   //offset is strangely dependent on elements in svg, hence we need to offset it to the proper position
+        //   .offset([-10, 0])
+        //   .show(rec.data(), rec.node());
+        let tooltipNode:any = d3.select("body").select("div.d3tooltip").node();
+        d3.select("body").select("div.d3tooltip")
+          .html('<span style="color:steelblue">Row: </span><span>'+ (d.index + 1) + ' </span>')
+          .transition()
+          .duration(100)
+          .style("opacity", .9)
+          .style("left", (d3.event.pageX - tooltipNode.scrollWidth) + "px")
+          .style("top", d3.event.clientY + "px");
       })
       .on('mouseout', (d, i, siblings) => {
         let rec = d3.select(siblings[i]).style('fill', (d, i, siblings:any[]) => {
           return this.fillRect(siblings[i].parentNode.__data__);
         });
-        this.tooltip.hide();
+        // this.tooltip.hide();
+        d3.select("body").select("div.d3tooltip").transition()
+          .duration(100)
+          .style("opacity", 0);
       })
-      .on('mouseleave', this.tooltip.hide)
-      .call(this.tooltip);
+      .on('mouseleave', (data:any) => {
+        d3.select("body").select("div.d3tooltip").transition()
+          .duration(100)
+          .style("opacity", 0);
+        });
   }
   
   fillRect(metric: any): string {

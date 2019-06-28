@@ -13,7 +13,6 @@ import { Row } from '../data-model/row';
 import { ContextMenuComponent, ContextMenuService } from 'ngx-contextmenu';
 
 import * as d3 from 'd3';
-import d3Tip from 'd3-tip';
 
 @Injectable()
 @Component({
@@ -36,9 +35,6 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   itemsPerPage:number = 100;
   rowsFrom:number = 0;
   disabled:boolean = false;
-
-  // external js libraries
-  tooltip;
 
   @ViewChild('headerCols', {static: false}) headerCols;
   @ViewChild('bodyCols', {static: false}) bodyCols;
@@ -77,10 +73,6 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
       page: this.page, 
       itemsPerPage: this.itemsPerPage 
     });
-
-    // var tip = require('d3-tip');
-    this.tooltip = d3Tip().attr('class', 'd3-tip')
-      .offset([-10, 0]);
 
     this.selectedMetricCells = {};
     this.selectedMetrics = [];

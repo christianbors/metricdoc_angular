@@ -11,7 +11,6 @@ export class QualityHeaderColComponent implements OnChanges, AfterContentChecked
 
   @Input() metricCol;
   @Input() metric;
-  @Input() tooltip;
   @Input() metricsOverlayModel;
   @Input() columnMetricColors;
   @Input() svgWidth;
@@ -34,7 +33,8 @@ export class QualityHeaderColComponent implements OnChanges, AfterContentChecked
         if(this.metricCol.metrics[this.metric]) {
           let currentMetric = this.metricCol.metrics[this.metric];
           
-          this.tooltip.html(function(d) {
+          let tooltipNode:any = d3.select("body").select("div.d3tooltip").node();
+          d3.select("body").select("div.d3tooltip").html(function(d) {
               var text = "<span style='color:steelblue'>" + currentMetric.name + "</span><br>" +
                 "Metric Value: <span style='color:steelblue'>" + currentMetric.measure + "</span><br>" + 
                 "Number of Checks: <span style='color:steelblue'>" + currentMetric.evalTuples.length + "</span><br>";
@@ -44,15 +44,26 @@ export class QualityHeaderColComponent implements OnChanges, AfterContentChecked
               text += "Data Type: <span style='color:steelblue'>" + currentMetric.datatype + "</span>";
               return text;
             })
-            //offset is strangely dependent on elements in svg, hence we need to offset it so the proper position
-            .offset([-10, (this.htmlElement.offsetWidth/2) - ((this.metricCol.metrics[this.metric].measure*cellWidth)/2)])
-            .show(svg.data(), svg.node());
+            // .transition()
+            //   .duration(100)
+              .style("left", (d3.event.pageX - tooltipNode.scrollWidth) + "px")
+              .style("top", (d3.event.pageY) + "px")
+              .style("opacity", .9);
+            // //offset is strangely dependent on elements in svg, hence we need to offset it so the proper position
+            // .offset([-10, (this.htmlElement.offsetWidth/2) - ((this.metricCol.metrics[this.metric].measure*cellWidth)/2)])
+            // .show(svg.data(), svg.node());
         }
       })
-      .on("mouseout", this.tooltip.hide)
-      .on("mouseleave", this.tooltip.hide);
-
-    svg.call(this.tooltip);
+      .on("mouseout", () => {
+        d3.select("body").select("div.d3tooltip").transition()
+          .duration(100)
+          .style("opacity", 0);
+      })
+      .on("mouseleave", () => {
+        d3.select("body").select("div.d3tooltip").transition()
+          .duration(100)
+          .style("opacity", 0);
+      });
 
     if(this.metricCol.metrics[this.metric]) {
       svg.selectAll("rect").remove();

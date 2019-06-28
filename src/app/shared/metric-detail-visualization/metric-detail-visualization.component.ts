@@ -2,7 +2,7 @@ import { Component, OnInit, Input, Output, EventEmitter, ElementRef, OnChanges, 
 import { EvalTuple } from '../open-refine/model/eval-tuple';
 
 import * as d3 from 'd3';
-import d3Tip from 'd3-tip';
+import * as d3tip from 'd3-tip';
 
 @Component({
   selector: 'metric-detail-view',
@@ -21,7 +21,7 @@ export class MetricDetailVisualizationComponent implements OnInit, OnChanges {
   @Input() rowsFrom;
   @Input() rowsTo;
 
-  @ViewChild('visParent', {static: false}) svg;
+  @ViewChild('visParent', {static: true}) svg;
 
   @Output() onDataRowsSelected = new EventEmitter();
 
@@ -40,17 +40,10 @@ export class MetricDetailVisualizationComponent implements OnInit, OnChanges {
   private x: any;
   private xAxis: any;
   private yScale: any;
-  private tooltip;
   private activeEvalTuples: EvalTuple[];
   
   constructor(private element: ElementRef) {
     this.htmlElement = this.element.nativeElement;
-
-    // let d3tip = require('d3-tip')(d3);
-    let tip = d3Tip();
-    this.tooltip = tip
-      .attr('class', 'd3-tip')
-      .offset([-10, 0]);
   }
 
   ngOnInit() {
@@ -63,6 +56,9 @@ export class MetricDetailVisualizationComponent implements OnInit, OnChanges {
       .attr('class', 'rect-disabled')
       .attr('fill', 'transparent');
     this.drawDetailView();
+    var div = d3.select("body").append("div")
+      .attr("class", "d3tooltip")
+      .style("opacity", 0);
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -217,24 +213,32 @@ export class MetricDetailVisualizationComponent implements OnInit, OnChanges {
           })
           .attr('x', this.x(0))
           .style('height', '1');
-          this.tooltip.html( d => {
-            let text;
-            if (d[0].index.length > 1) {
-              text = '<span style="color:steelblue">Rows: </span><span>'+ (d[0].index[0] + 1) + ' - ' + (d[0].index[d[0].index.length-1] + 1) + ' </span>' ;
-            } else {
-              text = '<span style="color:steelblue">Row: </span><span>'+ (d[0].index[0] + 1) + ' </span>' ;
-            }
-              return text;
-            })
-            //offset is strangely dependent on elements in svg, hence we need to offset it so the proper position
-            .offset([-7, 0])
-            .show(rec.data(), rec.node());
+
+          let htmlText;
+          if (d.index.length > 1) {
+            htmlText = '<span style="color:steelblue">Rows: </span><span>'+ (d.index[0] + 1) + ' - ' + (d.index[d.index.length-1] + 1) + ' </span>' ;
+          } else {
+            htmlText = '<span style="color:steelblue">Row: </span><span>'+ (d.index[0] + 1) + ' </span>' ;
+          }
+
+          let tooltipNode:any = d3.select("body").select("div.d3tooltip").node();
+          d3.select("body").select("div.d3tooltip").html(htmlText)//"<span><b>Filter " + facet["other:" + id].$ + " rows</b></span><br><span>" + text.join("<br>") + "</span>")
+            .style("left", (d3.event.pageX - tooltipNode.scrollWidth) + "px")
+            .style("top", (d3.event.pageY) + "px")
+            .style("opacity", .9);
         })
-        .on('mouseleave', (d, i, el) => {
-          this.tooltip.hide();
+        .on("mousemove", (data:any) => {
+          let tooltipNode:any = d3.select("body").select("div.d3tooltip").node();
+          d3.select("body").select("div.d3tooltip")
+            .style("left", (d3.event.pageX - tooltipNode.scrollWidth) + "px")
+            .style("top", (d3.event.pageY) + "px");
+        })
+        .on('mouseleave', (d:any, i:any, el:any) => {
+          d3.select("body").select("div.d3tooltip")
+            .style("opacity", 0);
+          // this.tooltip.hide();
           d3.select(el[i]).selectAll('rect.mouseover').remove();
-        })
-        .call(this.tooltip);
+        });
       let bins = rows.selectAll('.bin')
         .data((d) => {
           if(d != null) {
@@ -268,7 +272,7 @@ export class MetricDetailVisualizationComponent implements OnInit, OnChanges {
         .attr('transform', 'translate(0,' + (this.detailViewHeight-this.axisOffset) + ')')
         .attr('x', this.detailViewHeight-this.axisOffset)
         .attr('y', 0)
-        .call(d3.axisBottom(this.x))
+      .call(d3.axisBottom(this.x))
         .style('font-size', 12)
         .style('text-anchor', 'start')
         .selectAll('.tick text')
