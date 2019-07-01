@@ -386,9 +386,13 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
             .style("top", (d3.event.pageY - 28) + "px");
         })
         .on("mouseout", (quality:any, i:number, el:any) => {
-          d3.select(el[i])
+          d3.select("#comparisonView").selectAll("g." + quality.data.column.replace("column:", "") + "." + quality.data.metric.replace("quality:", ""))
             .attr("stroke-width", null)
-            .attr("stroke-opacity", null);
+            .attr("stroke-opacity", null)
+            .attr("fill", this.determineColor(quality.data.metric.replace("quality:", "")));
+          // d3.select(el[i])
+          //   .attr("stroke-width", null)
+          //   .attr("stroke-opacity", null);
           this.div.transition()
             .duration(100)
             .style("opacity", 0);
@@ -584,16 +588,56 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       return fullColA.cellIndex - fullColB.cellIndex;
     })
 
-    selectElement.attr("transform", "translate(" + translate + ",15)");
-  
     let scaleXColumn = d3.scaleBand()
       .domain(issues.map(issuesEntry => issuesEntry.col))
-      .range([translate, translate + elementWidth - 15]);
+      .range([translate, translate + elementWidth - 35]);
+
+    let xAxis = d3.axisBottom(scaleXColumn);
+    selectElement.selectAll("g.axis g").remove();
     
+    selectElement.select("g.axis").append("g")
+      .classed("x-axis", true)
+      // .attr("transform", "translate(0, 35)")
+      .call((g:any) => {
+        g.call(xAxis);
+        // g.select(".domain").remove();
+        g.selectAll(".tick line").attr("transform", "translate(-" + (scaleXColumn.bandwidth()/2) + ",0)");
+        g.selectAll(".tick text")
+          .text((d:any) => {
+            return d.replace("column:","");
+          })
+          .attr("text-anchor", "start")
+          .attr("transform", "translate(-"+ scaleXColumn.bandwidth()/2 +",0)rotate(-90)");
+      });
+    let axisOffset;
+    selectElement.select("g.axis g.x-axis")
+      .attr("transform", (g:any) => {
+        let nodeEl: any = selectElement.select("g.axis g.x-axis").node();
+        axisOffset = nodeEl.getBBox().height;
+        return "translate(0, " + nodeEl.getBBox().height + ")";
+      })
+
     let scaleYRows = d3.scaleLinear()
       .domain([0, rows])
-      .range([15, this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding]);
+      .range([axisOffset, this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding]);
 
+    let yAxis = d3.axisLeft(scaleYRows);
+    d3.select('#issueView g.axis').append("g")
+      .classed("y-axis", true)
+      .attr("transform", "translate(" + this.issueViewOffset + ",0)")
+      .call(yAxis);
+    let xAxisNode:any = d3.select("#issueView g.axis g.x-axis").node();
+    let yAxisNode:any = d3.select("#issueView g.axis g.y-axis").node();
+    d3.select('#issueView g.axis').append("text")
+      .attr("text-anchor", "middle")  // this makes it easy to centre the text as the transform is applied to the anchor
+      // this.compareView.nativeElement.scrollHeight
+      .attr("transform", "translate("+ (this.issueViewOffset - yAxisNode.getBBox().width) + "," + (axisOffset - 5) +")")  // (yAxisNode.getBBox().height/2 + axisOffset)
+      .text("Rows");
+    d3.select('#issueView g.axis').append("text")
+    .attr("text-anchor", "middle")
+    .attr("transform", "translate(" + (this.issueViewOffset + xAxisNode.getBBox().width/2 - this.elementPadding) + "," + 20 + ")")
+    .text("Columns");
+  
     // // EXIT old elements not present in new data.
     // issueView.exit()
     //   // .attr("class", "exit")
@@ -713,18 +757,6 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
         .attr("y", scaleYRows(rows))
       .remove();
 
-    let xAxis = d3.axisBottom(scaleXColumn);
-    let axisGroup = selectElement.append("g")
-      .classed("axis", true);
-    axisGroup.append("g")
-      .classed("x-axis", true)
-      .attr("transform", "translate(0, 15)")
-      .call((g:any) => {
-        g.call(xAxis);
-        // g.select(".domain").remove();
-        g.selectAll(".tick line").attr("transform", "translate(-" + (scaleXColumn.bandwidth()/2) + ",0)");
-        g.selectAll(".tick text").remove();
-      });
     // let colGroups = issueView;
     // colGroups.exit()
     //   .transition(this.transition)
@@ -737,26 +769,24 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
   private renderIssueSelectionView() {
     // let translX = 25 + this.compareView.nativeElement.scrollWidth - this.detailViewWidth;
     let detailViewSvg = d3.select("#qualityComparison svg");
-    d3.select('#issueView g.axis').remove();
+    d3.select("#issueView g.axis").remove();
+    d3.select("#issueView").append("g").classed("axis", true);
     let rows:number = parseInt(this.provenanceOverlayModel.provenance.entity["project_info:dataset"]["other:" + this.histId].$);
     let shiftRows:number = 0;
     if (this.shiftHistId)
       shiftRows = parseInt(this.provenanceOverlayModel.provenance.entity["project_info:dataset"]["other:" + this.shiftHistId].$);
 
     this.renderIssueViewForHistId(this.histId, d3.select("#issueView"), this.issueViewOffset, rows > shiftRows ? rows : shiftRows, this.detailViewWidth - 25);
-    d3.select("#issueView").attr("transform", "translate(" + this.issueViewOffset + ",0)");
-    let scaleYRows = d3.scaleLinear()
-      .domain([0, rows > shiftRows ? rows : shiftRows])
-      .range([15, this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding]);
-    let yAxis = d3.axisLeft(scaleYRows);
-    d3.select('#issueView g.axis').append("g")
-      .classed("y-axis", true)
-      .attr("transform", "translate(" + this.issueViewOffset + ",0)")
-      .call(yAxis);
-  }
+    // d3.select("#issueView").attr("transform", "translate(" + this.issueViewOffset + ",35)");
+    // let scaleYRows = d3.scaleLinear()
+    //   .domain([0, rows > shiftRows ? rows : shiftRows])
+    //   .range([35, this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding]);
+    
 
-  private renderIssueViewForDiff() {
-
+    // d3.select('#issueView g.axis text')  // select all the text elements for the xaxis
+    //       .attr('transform', function(d) {
+    //          return "translate(" + this.getBBox().height*-2 + "," + this.getBBox().height + ")rotate(-45)";
+    //      });
   }
 
   private renderHistoryLinks(element: any, history: any[], scale: any, classed: string, inverted: boolean) {
@@ -770,8 +800,11 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       .attr('height', this.elementPadding)
       .classed(classed, true)
       .classed('jointSelected', (d:any) => {
-        return this.shiftNodeHistory.map(node => node.id).includes(d.id) &&
-          this.nodeHistory.map(node => node.id).includes(d.id);
+        if(this.shiftNodeHistory && this.shiftNodeHistory.length > 0)
+          return this.shiftNodeHistory.map(node => node.id).includes(d.id) &&
+            this.nodeHistory.map(node => node.id).includes(d.id);
+        else
+          return this.nodeHistory.map(node => node.id).includes(d.id);
       });
 
       //TODO: links with mouseover
@@ -920,6 +953,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       //   .range([this.elementPadding, this.scaleHistory(this.nodeHistory[this.nodeHistory.length-1].depth) + this.scaleHistory.bandwidth()])
       //   .paddingInner(this.innerPadding);
       this.renderQualityView(this.nodeHistory, this.scaleHistory, compareA, false);
+      this.renderHistoryLinks(d3.select("#comparisonView").append("g").classed("icons", true), this.nodeHistory, this.scaleHistory, 'selected', false);
       this.issueViewOffset = this.elementPadding + this.compareView.nativeElement.scrollWidth - this.detailViewWidth;
       this.renderIssueSelectionView();
     }
