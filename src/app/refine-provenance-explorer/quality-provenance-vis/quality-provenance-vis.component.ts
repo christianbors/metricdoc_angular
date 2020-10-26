@@ -273,7 +273,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
 
     let maxVal = Math.max.apply(Math, arr);
     // max scale needs to be determined // we also leave space for multiple selection guiding icons
-    let y = d3.scaleLinear().rangeRound([this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding, 0]).domain([0, maxVal]).nice();
+    let y = d3.scaleLinear().rangeRound([this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding, this.elementPadding]).domain([0, maxVal]).nice();
 
     // let metricColorScale = d3.scaleSequential(d3.interpolateViridis);
     if(this.uniqueMetrics.length == 0) {
@@ -343,7 +343,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
             if (this.shiftHistId)
               shiftRows = parseInt(this.provenanceOverlayModel.provenance.entity["project_info:dataset"]["other:" + this.shiftHistId].$);
 
-            this.renderIssueViewForHistId(quality.data.historyEntry.id, d3.select("#issueView"), this.issueViewOffset, rows > shiftRows ? rows : shiftRows, this.detailViewWidth - 25);
+            // this.renderIssueViewForHistId(quality.data.historyEntry.id, d3.select("#issueView"), this.issueViewOffset, rows > shiftRows ? rows : shiftRows, this.detailViewWidth - 25);
           }
           
           d3.select(el[i])
@@ -417,6 +417,35 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
                 // .attr("fill", (d:any) =>  d3.schemePastel2[this.uniqueMetrics.indexOf(quality.data.metric.replace("quality:", ""))])
           }
         });
+
+    let qualityYAxis = d3.axisLeft(y);
+    rootElement.append("g")
+      .classed("y-axis", true)
+      .attr("transform", "translate(" + this.elementPadding + ",0)")
+      .call((g:any) => {
+        g.call(qualityYAxis);
+      });
+    rootElement.append("text")
+      .attr("text-anchor", "left")
+      .attr("transform", "translate(0,15)")
+      .text("Quality Issues Rate");
+    // //** this is the right hand side axis for the quality flow
+    // let qualityYAxisRight = d3.axisRight(y);
+    // rootElement.append("g")
+    //   .classed("y-axis", true)
+    //   .attr("transform", "translate(" + (scale.range()[1]) + ",0)")
+    //   .call((g:any) => {
+    //     g.call(qualityYAxisRight);
+    //   });
+
+      // g.selectAll(".tick line").attr("transform", "translate(-" + (scaleXColumn.bandwidth()/2) + ",0)");
+      //   g.selectAll(".tick text")
+      //     .text((d:any) => {
+      //       return d.replace("column:","");
+      //     })
+      //     .attr("text-anchor", "start")
+      //     .attr("transform", "translate(-"+ scaleXColumn.bandwidth()/2 +",0)rotate(-90)");
+
 
     const link = rootElement.append("g")
         .classed("issueLinks", true)
@@ -593,7 +622,7 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       .range([translate, translate + elementWidth - 35]);
 
     let xAxis = d3.axisBottom(scaleXColumn);
-    selectElement.selectAll("g.axis g").remove();
+    d3.selectAll("#issueView g.axis g").remove();
     
     selectElement.select("g.axis").append("g")
       .classed("x-axis", true)
@@ -622,21 +651,23 @@ export class QualityProvenanceVisComponent implements OnInit, OnChanges {
       .range([axisOffset, this.compareView.nativeElement.scrollHeight - 20 - this.elementPadding]);
 
     let yAxis = d3.axisLeft(scaleYRows);
-    d3.select('#issueView g.axis').append("g")
+    d3.select("#issueView g.axis").append("g")
       .classed("y-axis", true)
       .attr("transform", "translate(" + this.issueViewOffset + ",0)")
       .call(yAxis);
     let xAxisNode:any = d3.select("#issueView g.axis g.x-axis").node();
     let yAxisNode:any = d3.select("#issueView g.axis g.y-axis").node();
-    d3.select('#issueView g.axis').append("text")
-      .attr("text-anchor", "middle")  // this makes it easy to centre the text as the transform is applied to the anchor
-      // this.compareView.nativeElement.scrollHeight
-      .attr("transform", "translate("+ (this.issueViewOffset - yAxisNode.getBBox().width) + "," + (axisOffset - 5) +")")  // (yAxisNode.getBBox().height/2 + axisOffset)
-      .text("Rows");
-    d3.select('#issueView g.axis').append("text")
-    .attr("text-anchor", "middle")
-    .attr("transform", "translate(" + (this.issueViewOffset + xAxisNode.getBBox().width/2 - this.elementPadding) + "," + 20 + ")")
-    .text("Columns");
+    if (xAxisNode && yAxisNode) {
+      d3.select('#issueView g.axis').append("text")
+        .attr("text-anchor", "middle")  // this makes it easy to centre the text as the transform is applied to the anchor
+        // this.compareView.nativeElement.scrollHeight
+        .attr("transform", "translate("+ (this.issueViewOffset - yAxisNode.getBBox().width) + "," + (axisOffset - 5) +")")  // (yAxisNode.getBBox().height/2 + axisOffset)
+        .text("Rows");
+      d3.select('#issueView g.axis').append("text")
+      .attr("text-anchor", "middle")
+      .attr("transform", "translate(" + (this.issueViewOffset + xAxisNode.getBBox().width/2 - this.elementPadding) + "," + 20 + ")")
+      .text("Columns");
+    }
   
     // // EXIT old elements not present in new data.
     // issueView.exit()

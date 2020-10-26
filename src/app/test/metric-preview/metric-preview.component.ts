@@ -74,7 +74,7 @@ export class MetricPreviewComponent implements OnInit, OnChanges {
           }
         });
 
-      let metrics = stack(<any[]>overlayModel.metricColumns);
+      let metrics = stack(<any[]>overlayModel.metricColumnNames);
       var bandScale = d3.scaleBand()
         .domain(this.project.columnModel.columns.map(function(d) { return d.name }))
         .range([0, 500])

@@ -200,7 +200,7 @@ export class OpenDataProvenanceVisComponent implements OnInit {
     // prepare key pairs, we need to sort by metric instead of column
     let keys = [];
     this.projectsFromCommits.forEach((d: any, i: number, data: any[]) => {
-      for(let col of d.models.overlayModels.metricsOverlayModel.metricColumns) {
+      for(let col of d.models.overlayModels.metricsOverlayModel.metricColumnNames) {
         if(col != null && !col.columnName.includes("404 File Not Found")) {
           for(let metric of d.models.overlayModels.metricsOverlayModel.availableMetrics) {
             let keyPair = {col: col.columnName, metric: metric};
@@ -212,7 +212,7 @@ export class OpenDataProvenanceVisComponent implements OnInit {
           }
         }
       }
-      for(let col of d.models.overlayModels.metricsOverlayModel.metricColumns) {
+      for(let col of d.models.overlayModels.metricsOverlayModel.metricColumnNames) {
         // check if dataset might be missing
         if(col != null && !col.columnName.includes("404 File Not Found")) {
           for (let spanMetric of d.models.overlayModels.metricsOverlayModel.availableSpanningMetrics) {
@@ -233,8 +233,8 @@ export class OpenDataProvenanceVisComponent implements OnInit {
     let stack = d3.stack()
       .keys(keys)
       .value((d: any, keyPair: any, j, data) => {
-        let metricCols = d.models.overlayModels.metricsOverlayModel.metricColumns;
-        let mCol = d.models.overlayModels.metricsOverlayModel.metricColumns.filter((d, i) => {
+        let metricCols = d.models.overlayModels.metricsOverlayModel.metricColumnNames;
+        let mCol = d.models.overlayModels.metricsOverlayModel.metricColumnNames.filter((d, i) => {
           return d.columnName === keyPair.col;
         })[0];
         if(mCol && mCol.metrics != null && mCol.metrics[keyPair.metric] != null)

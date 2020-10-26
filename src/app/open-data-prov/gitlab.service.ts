@@ -58,7 +58,7 @@ export class GitlabService {
     if(body.availableMetrics 
       && body.availableSpanningMetrics 
       && body.computeDuplicates
-      && body.metricColumns
+      && body.metricColumnNames
       && body.spanningMetrics) {
       // this.response = body;
     }

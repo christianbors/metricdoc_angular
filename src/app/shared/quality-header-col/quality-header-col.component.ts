@@ -27,11 +27,11 @@ export class QualityHeaderColComponent implements OnChanges, AfterContentChecked
     let cellWidth = this.htmlElement.offsetWidth - 1;
     let svg = d3.select(this.htmlElement).select("svg");
 
-    svg.data(this.metricCol.metrics[this.metric]);
+    svg.data(this.metricsOverlayModel.metrics[this.metricCol][this.metric]);
     svg.attr("height", 26)
       .on("mouseover", d => {
-        if(this.metricCol.metrics[this.metric]) {
-          let currentMetric = this.metricCol.metrics[this.metric];
+        if(this.metricsOverlayModel.metrics[this.metricCol][this.metric]) {
+          let currentMetric = this.metricsOverlayModel.metrics[this.metricCol][this.metric];
           
           let tooltipNode:any = d3.select("body").select("div.d3tooltip").node();
           d3.select("body").select("div.d3tooltip").html(function(d) {
@@ -65,12 +65,12 @@ export class QualityHeaderColComponent implements OnChanges, AfterContentChecked
           .style("opacity", 0);
       });
 
-    if(this.metricCol.metrics[this.metric]) {
+    if(this.metricsOverlayModel.metrics[this.metricCol][this.metric]) {
       svg.selectAll("rect").remove();
       let rect = svg.append("rect")
         .classed("metric", true)
         .attr("height", 26)
-        .attr("width", this.metricCol.metrics[this.metric].measure * cellWidth)
+        .attr("width", this.metricsOverlayModel.metrics[this.metricCol][this.metric].measure * cellWidth)
         .style("fill", (d, i, siblings) => {
           // let metric = siblings[i].parentNode.__data__;
           return this.columnMetricColors[this.metric];
@@ -80,8 +80,8 @@ export class QualityHeaderColComponent implements OnChanges, AfterContentChecked
   ngAfterContentChecked() {
     let cellWidth = this.htmlElement.offsetWidth - 1;
     let svg = d3.select(this.htmlElement).select("svg");
-    if(this.metricCol.metrics[this.metric]) {
-      svg.selectAll("rect").attr("width", this.metricCol.metrics[this.metric].measure * cellWidth);
+    if(this.metricsOverlayModel.metrics[this.metricCol][this.metric]) {
+      svg.selectAll("rect").attr("width", this.metricsOverlayModel.metrics[this.metricCol][this.metric].measure * cellWidth);
     }
   }
 }

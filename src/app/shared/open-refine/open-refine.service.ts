@@ -37,7 +37,7 @@ export class OpenRefineService {
     if(body.availableMetrics 
       && body.availableSpanningMetrics 
       && body.computeDuplicates
-      && body.metricColumns
+      && body.metricColumnNames
       && body.spanningMetrics) {
       this.model = body;
     }

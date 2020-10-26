@@ -78,7 +78,7 @@
                 [style.paddingLeft.px]="8"
                 [style.paddingRight.px]="4">{{metric}}
               </th>
-                <ng-container *ngFor="let metricColumn of project.overlayModels.metricsOverlayModel.metricColumns; let cellIndex = index; trackBy: trackByFn">
+                <ng-container *ngFor="let metricColumn of objectKeys(project.overlayModels.metricsOverlayModel.metrics); let cellIndex = index; trackBy: trackByFn">
                   <th class="metric-overview-col"
                     *ngIf="metricColumn" 
                     metric-col 

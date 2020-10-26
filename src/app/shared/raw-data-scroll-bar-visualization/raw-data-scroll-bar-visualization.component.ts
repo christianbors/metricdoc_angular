@@ -57,7 +57,7 @@ export class RawDataScrollBarVisualizationComponent implements OnInit, OnChanges
     this.overlay = d3.select(this.htmlElement)
       .selectAll('g.metrics-overlay')
       .data(d => {
-        return this.metricsOverlayModel.metricColumns;
+        return Object.keys(this.metricsOverlayModel.metrics);
       })
       .enter().append('g')
       .attr('class', 'metrics-overlay');

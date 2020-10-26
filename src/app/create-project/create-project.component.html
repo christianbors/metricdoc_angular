@@ -28,16 +28,16 @@
   </ng-container>
   <ng-container *ngIf="metricFunctions">
     <h3>Recommended Metrics</h3>
-    <div class="list-group" style="margin-bottom: 12px" *ngFor="let functionsColumn of metricFunctions.columns; let colIndex = index; trackBy: columnFn">
+    <div class="list-group" style="margin-bottom: 12px" *ngFor="let functionsColumn of objectKeys(metricFunctions); let colIndex = index; trackBy: columnFn">
       <li class="list-group-item justify-content-between list-group-item-secondary">
-        Column: {{functionsColumn.column}}
+        Column: {{functionsColumn}}
       </li>
       <!-- [routerLink]="['/metric-project', proj.key]"
         routerLinkActive="active" -->
       <li class="list-group-item list-group-item-action flex-column" 
-        *ngFor="let metricRecommendation of functionsColumn.metrics; let metricIndex = index; trackBy: metricFn"
-        [class.disabled]="metricsDisabled[colIndex][metricIndex]"
-        (click)="toggleMetric($event, colIndex, metricIndex)">
+        *ngFor="let metricRecommendation of metricFunctions[functionsColumn]; let metricIndex = index; trackBy: metricFn"
+        [class.disabled]="metricsDisabled[functionsColumn][metricIndex]"
+        (click)="toggleMetric($event, functionsColumn, metricIndex)">
         <div class="d-flex w-100 justify-content-between">
           <div class="float-left">
             <span class="fa fa-bar-chart"></span>
@@ -51,8 +51,8 @@
           </div>
         </div>
         <div class="d-flex w-100 justify-content-between">
-          <small [style.marginRight.px]="100">Description: {{metricRecommendation.metric.description}}</small>
-          <small class="float-right">Default Parameters: {{metricRecommendation.metric.params}}</small>
+          <small [style.marginRight.px]="100">Description: {{metricRecommendation.description}}</small>
+          <small class="float-right">Default Parameters: {{metricRecommendation.params}}</small>
         </div>
       </li>
     </div>
@@ -64,7 +64,7 @@
     <span class="badge badge-default badge-pill">{{(refineProjects | nonMetricProjects).length}}</span>
   </li>
   <!-- (click)="openProject(rowIndex)"> -->
-  <li class="list-group-item list-group-item-action flex-column disabled" *ngFor="let proj of (refineProjects | nonMetricProjects); let rowIndex = index; trackBy: rowFn"
+  <li class="list-group-item list-group-item-action flex-column" *ngFor="let proj of (refineProjects | nonMetricProjects); let rowIndex = index; trackBy: rowFn"
     [routerLink]="['/create-project', proj.key]"
     routerLinkActive="active">
     <div class="d-flex w-100 justify-content-between">

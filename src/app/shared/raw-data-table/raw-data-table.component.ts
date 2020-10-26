@@ -28,6 +28,8 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
   @Input() spanMetricColors;
   // metricsOverlayModel:MetricsOverlayModel;
 
+  objectKeys = Object.keys;
+
   colWidths: number[] = [];
   rowModel:any[];
   maxSize:number = 5;
@@ -169,8 +171,8 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
       this.selectedMetrics.push(item);
       this.selectedColumns.push(item.spanningColumns);
     } else {
-      this.selectedMetrics.push(this.project.overlayModels.metricsOverlayModel.metricColumns[cellIndex].metrics[item]);
-      this.selectedColumns.push(this.project.overlayModels.metricsOverlayModel.metricColumns[cellIndex].columnName);
+      this.selectedMetrics.push(this.project.overlayModels.metricsOverlayModel.metricColumnNames[cellIndex].metrics[item]);
+      this.selectedColumns.push(this.project.overlayModels.metricsOverlayModel.metricColumnNames[cellIndex].columnName);
     }
     this.onOverviewMetricSelected.emit({metrics: this.selectedMetrics, columns: this.selectedColumns});
     this.tableHeightChanged.emit(this.colHead.nativeElement.getBoundingClientRect().height + this.spanHead.nativeElement.getBoundingClientRect().height);
@@ -283,10 +285,10 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
 
       this.colOffset = [];
       this.colOffset.push(0);
-      for (let metricColumn of this.project.overlayModels.metricsOverlayModel.metricColumns) {
+      for (let metricColumn of Object.entries(this.project.overlayModels.metricsOverlayModel.metrics)) {
         let offsetWidth = 4;
-        for (let key in metricColumn.metrics) {
-          if (metricColumn.metrics[key].dirtyIndices) {
+        for (let key of Object.keys(metricColumn[1])) {
+          if (metricColumn[1][key].dirtyIndices) {
             offsetWidth += 12;
           }
         }
@@ -295,8 +297,8 @@ export class RawDataTableComponent implements OnInit, AfterContentChecked, After
       if (this.project.overlayModels.metricsOverlayModel.spanningMetrics) {
         for (let spanMetric of this.project.overlayModels.metricsOverlayModel.spanningMetrics) {
           for (let columnName of spanMetric.spanningColumns) {
-            for (let i = 0; i < this.project.overlayModels.metricsOverlayModel.metricColumns.length; i++) {
-              if (this.project.overlayModels.metricsOverlayModel.metricColumns[i].columnName === columnName)
+            for (let i = 0; i < this.project.overlayModels.metricsOverlayModel.metricColumnNames.length; i++) {
+              if (this.project.overlayModels.metricsOverlayModel.metricColumnNames[i].columnName === columnName)
                 this.colOffset[i+1] += 12;
             }
           }

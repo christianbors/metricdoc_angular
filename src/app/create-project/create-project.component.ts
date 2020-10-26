@@ -15,6 +15,8 @@ import { MetricFunction } from '../shared/open-refine/model/metric-function';
 })
 export class CreateProjectComponent implements OnInit {
 
+  objectKeys = Object.keys;
+
   projectId;
   refineUrl: string;
   projectMetadata: ProjectMetadata;
@@ -61,12 +63,12 @@ export class CreateProjectComponent implements OnInit {
       this.openRefineService.recommendMetrics(this.projectId)
         .subscribe(
           metricFunctions => {
-            this.metricFunctions = metricFunctions;
-            this.metricsDisabled = [];
-            for(let colIdx = 0; colIdx < this.metricFunctions.columns.length; ++colIdx) {
-              this.metricsDisabled[colIdx] = [];
-              for (let mIdx = 0; mIdx < this.metricFunctions.columns[colIdx].metrics.length; ++mIdx)
-                this.metricsDisabled[colIdx][mIdx] = false;
+            this.metricFunctions = metricFunctions['recommendedMetrics'];
+            this.metricsDisabled = {} as any;
+            for(let col of Object.keys(this.metricFunctions)) {
+              this.metricsDisabled[col] = [];
+              for (let mIdx = 0; mIdx < this.metricFunctions[col].length; ++mIdx)
+                this.metricsDisabled[col][mIdx] = false;
             }
           });
     } else {
@@ -74,23 +76,23 @@ export class CreateProjectComponent implements OnInit {
     }
   }
 
-  toggleMetric(event: MouseEvent, columnIndex: number, metricIndex: number) {
-    this.metricsDisabled[columnIndex][metricIndex] = !this.metricsDisabled[columnIndex][metricIndex];
+  toggleMetric(event: MouseEvent, column: string, metricIndex: number) {
+    this.metricsDisabled[column][metricIndex] = !this.metricsDisabled[column][metricIndex];
   }
 
-  onTextKey(event: KeyboardEvent, columnIndex: number, metricIndex: number) {
-    this.metricFunctions.columns[columnIndex].metrics[metricIndex].parameters = (<HTMLInputElement>event.target).value;
+  onTextKey(event: KeyboardEvent, column: string, metricIndex: number) {
+    this.metricFunctions[column].metrics[metricIndex].parameters = (<HTMLInputElement>event.target).value;
   }
 
   addMetricsOverlay() {
-    for (let i = 0; i < this.metricFunctions.columns.length; ++i) {
-      for (let j = 0; j < this.metricFunctions.columns[i].metrics.length; ++j) {
+    for (let i = 0; i < this.metricFunctions.length; ++i) {
+      for (let j = 0; j < this.metricFunctions[i].metrics.length; ++j) {
         if (this.metricsDisabled[i][j]) {
-          this.metricFunctions.columns[i][j] = null;
+          this.metricFunctions.recommendedMetrics[i][j] = null;
         }
       }
     }
-    this.openRefineService.setupProject(this.projectId, this.metricFunctions.columns)
+    this.openRefineService.setupProject(this.projectId, this.metricFunctions)
       .subscribe(
         project => {
           this.refineProject;
